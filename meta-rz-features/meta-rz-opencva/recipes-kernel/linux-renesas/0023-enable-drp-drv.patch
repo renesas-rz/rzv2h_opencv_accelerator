@@ -65,7 +65,7 @@ diff -uprN old/drivers/drp/Makefile new/drivers/drp/Makefile
 +
 diff -uprN old/drivers/drp/drp-core.c new/drivers/drp/drp-core.c
 --- old/drivers/drp/drp-core.c	1970-01-01 09:00:00.000000000 +0900
-+++ new/drivers/drp/drp-core.c	2023-10-12 11:36:58.000000000 +0900
++++ new/drivers/drp/drp-core.c	2024-02-15 18:32:16.000000000 +0900
 @@ -0,0 +1,927 @@
 +/*
 + * Driver for the Renesas RZ/V2H DRP unit
@@ -628,7 +628,7 @@ diff -uprN old/drivers/drp/drp-core.c new/drivers/drp/drp-core.c
 +static void disable_drp_intmask(addr_t drp_base_addr)
 +{
 +#if (0 != DRP_ECC_ENA)
-+    iowrite32(0x0000FFFF, drp_base_addr + DRP_ERRINT_ENABLE);
++    iowrite32(0x0000073F, drp_base_addr + DRP_ERRINT_ENABLE);
 +#else
 +    iowrite32(0x00000000, drp_base_addr + DRP_ERRINT_ENABLE);
 +    iowrite32(0x00000007, drp_base_addr + DRP_ECC);
@@ -760,7 +760,7 @@ diff -uprN old/drivers/drp/drp-core.c new/drivers/drp/drp-core.c
 +    stop_drp_clk(drp_base_addr);
 +
 +    // 9. Reset DRPCLKGEN module.
-+    iowrite32(0x00000000, drp_base_addr + STP_STPC_BADDR + STPC_SFTRST);
++    iowrite32(0x00000001, drp_base_addr + STP_STPC_BADDR + STPC_CLKGEN_RST);
 +
 +    // 10.System reset
 +    /* DO NOTHING */
@@ -996,7 +996,7 @@ diff -uprN old/drivers/drp/drp-core.c new/drivers/drp/drp-core.c
 +#endif
 diff -uprN old/drivers/drp/drp-core.h new/drivers/drp/drp-core.h
 --- old/drivers/drp/drp-core.h	1970-01-01 09:00:00.000000000 +0900
-+++ new/drivers/drp/drp-core.h	2023-10-10 16:02:45.000000000 +0900
++++ new/drivers/drp/drp-core.h	2024-02-15 18:32:33.000000000 +0900
 @@ -0,0 +1,148 @@
 +/*
 + * Driver for the Renesas RZ/V2H DRP-AI unit
@@ -1148,8 +1148,8 @@ diff -uprN old/drivers/drp/drp-core.h new/drivers/drp/drp-core.h
 +#endif /* DRP__H */
 diff -uprN old/drivers/drp/drp-if.c new/drivers/drp/drp-if.c
 --- old/drivers/drp/drp-if.c	1970-01-01 09:00:00.000000000 +0900
-+++ new/drivers/drp/drp-if.c	2024-01-31 17:02:01.000000000 +0900
-@@ -0,0 +1,2144 @@
++++ new/drivers/drp/drp-if.c	2024-02-15 18:11:52.000000000 +0900
+@@ -0,0 +1,2157 @@
 +/*
 + * Driver for the Renesas RZ/V2H DRP unit
 + *
@@ -1229,7 +1229,7 @@ diff -uprN old/drivers/drp/drp-if.c new/drivers/drp/drp-if.c
 +#define SYS_SHIFT                   (24)
 +
 +#if defined(CONFIG_ARCH_R9A09G057)
-+#define DRP_DRIVER_VERSION        "1.00 rel.1"
++#define DRP_DRIVER_VERSION        "1.00 rel.4"
 +#else
 +#define DRP_DRIVER_VERSION        "2.00 rel.3"
 +#endif
@@ -1303,7 +1303,7 @@ diff -uprN old/drivers/drp/drp-if.c new/drivers/drp/drp-if.c
 +static void drp_unregist_driver(void);
 +static void drp_unregist_device(void);
 +static void drp_init_device(uint32_t ch);
-+static int8_t drp_reset_device(uint32_t ch);
++static int8_t drp_cpg_reset(uint32_t ch);
 +static int8_t drp_stop_device(uint32_t ch);
 +static long drp_ioctl_assign(struct file *filp, unsigned int cmd, unsigned long arg);
 +static long drp_ioctl_start(struct file *filp, unsigned int cmd, unsigned long arg);
@@ -1544,13 +1544,21 @@ diff -uprN old/drivers/drp/drp-if.c new/drivers/drp/drp-if.c
 +                goto end;
 +            }
 +
++            /* Initialize DRP procedure */
++            drp_init_device(DRP_CH);
++
 +            /* Finalize DRP procedure */
 +            if(R_DRP_SUCCESS != drp_stop_device(DRP_CH))
 +            {
++                result = -EIO;
 +                DRP_DEBUG_PRINT("Reset failed\n");
++#ifdef CONFIG_DRP_SUPPORT_MULTI_OS
++                drp_flag_clear(DRPFLAG_DRP_INIT);
++#endif
++                goto end;
 +            }
 +            /* Reset DRP (CPG Reset)*/
-+            if(R_DRP_SUCCESS != drp_reset_device(DRP_CH))
++            if(R_DRP_SUCCESS != drp_cpg_reset(DRP_CH))
 +            {
 +                result = -EIO;
 +#ifdef CONFIG_DRP_SUPPORT_MULTI_OS
@@ -1651,7 +1659,7 @@ diff -uprN old/drivers/drp/drp-if.c new/drivers/drp/drp-if.c
 +                DRP_DEBUG_PRINT("Reset failed\n");
 +            }
 +            /* Reset DRP (CPG Reset)*/
-+            if(R_DRP_SUCCESS != drp_reset_device(DRP_CH))
++            if(R_DRP_SUCCESS != drp_cpg_reset(DRP_CH))
 +            {
 +                result = -EIO;
 +            }
@@ -2590,7 +2598,7 @@ diff -uprN old/drivers/drp/drp-if.c new/drivers/drp/drp-if.c
 +        }
 +
 +        /* Reset DRP (CPG Reset)*/
-+        if(R_DRP_SUCCESS != drp_reset_device(DRP_CH))
++        if(R_DRP_SUCCESS != drp_cpg_reset(DRP_CH))
 +        {
 +            result = -EIO;
 +            drp_flag_clear(DRPFLAG_DRP_INIT);
@@ -2740,7 +2748,12 @@ diff -uprN old/drivers/drp/drp-if.c new/drivers/drp/drp-if.c
 +    /* Finalize DRP procedure */
 +    if(R_DRP_SUCCESS != drp_stop_device(DRP_CH))
 +    {
++        result = -EIO;
 +        DRP_DEBUG_PRINT("Reset failed\n");
++#ifdef CONFIG_DRP_SUPPORT_MULTI_OS
++        drp_flag_clear(DRPFLAG_DRP_INIT);
++#endif
++        goto end;
 +    }
 +
 +    /* Initialize CPG (DRP CPG On) */
@@ -2751,7 +2764,7 @@ diff -uprN old/drivers/drp/drp-if.c new/drivers/drp/drp-if.c
 +    }
 +
 +    /* Reset DRP (CPG Reset)*/
-+    if(R_DRP_SUCCESS != drp_reset_device(DRP_CH))
++    if(R_DRP_SUCCESS != drp_cpg_reset(DRP_CH))
 +    {
 +        result = -EIO;
 +        goto end;
@@ -2857,7 +2870,7 @@ diff -uprN old/drivers/drp/drp-if.c new/drivers/drp/drp-if.c
 +    return result;
 +}
 +
-+static int8_t drp_reset_device(uint32_t ch)
++static int8_t drp_cpg_reset(uint32_t ch)
 +{
 +    int8_t retval = R_DRP_SUCCESS;
 +    struct drp_priv *priv = drp_priv;

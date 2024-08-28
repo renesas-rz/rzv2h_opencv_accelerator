@@ -109,7 +109,7 @@ If the following conditions apply, OpenCVA execute resizing process using DRP.
 | dsize | width: 2 - 3840<br> height: 2 - 2160 | ’0’ can also be set. In that case,<br> “fx” and “fy” parameter are valid.|
 | fx | (src_img width * fx): 2 - 3840 | Valid if dsize is 0. |
 | fy | (src_img height * fy): 2 - 2160	| Valid if dsize is 0. |
-| interpolation	| INTER_NEAREST or<br> INTER_LINEAR | |
+| interpolation	| INTER_LINEAR | |
   
 ## 4.2. cvtColor
 

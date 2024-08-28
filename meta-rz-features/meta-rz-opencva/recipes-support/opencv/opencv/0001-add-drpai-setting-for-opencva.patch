@@ -3622,7 +3622,7 @@ diff -uprN old/modules/imgproc/src/resize.cpp new/modules/imgproc/src/resize.cpp
 +    }
 +
 +    /* checking algorizm */
-+    if( (INTER_NEAREST != interpolation) && (INTER_LINEAR != interpolation) ) 
++    if(INTER_LINEAR != interpolation) 
 +    {
 +        return DRP_NOT_EXECUTE;
 +    }
