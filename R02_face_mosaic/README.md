@@ -190,12 +190,12 @@ Replace each variable according to your board.
     ```
     |Board | `EXE_DIR` |`URL` |`SO_FILE` |File Location |
     |:---|:---|:---|:---|:---|
-    |RZ/V2H EVK|[exe_v2h](./exe_v2h)  |<span style="font-size: small">`https://github.com/TakaakiSuezawa/test/releases/tag/apps_V1.00/`</span>  |<span style="font-size: small">`R02_face_mosaic_deploy_tvm_v2h-v100.so`</span> |[Release v1.00](https://github.com/TakaakiSuezawa/test/releases/tag/apps_V1.00/)  |
+    |RZ/V2H EVK|[exe_v2h](./exe_v2h)  |<span style="font-size: small">`https://github.com/renesas-rz/rzv2h_opencv_accelerator/releases/tag/apps_V1.00/`</span>  |<span style="font-size: small">`R02_face_mosaic_deploy_tvm_v2h-v100.so`</span> |[Release v1.00](https://github.com/renesas-rz/rzv2h_opencv_accelerator/releases/tag/apps_V1.00/)  |
 
     - E.g., for RZ/V2H EVK, use following commands.
         ```sh
         cd ${PROJECT_PATH}/R02_face_mosaic/exe_v2h/face_mosaic_yolov3
-        wget https://github.com/TakaakiSuezawa/test/releases/tag/apps_V1.00/R02_face_mosaic_deploy_tvm_v2h_v100.so
+        wget https://github.com/renesas-rz/rzv2h_opencv_accelerator/releases/tag/apps_V1.00/R02_face_mosaic_deploy_tvm_v2h_v100.so
         ```
 2. Rename the `R02_face_mosaic_deploy_*.so` to `deploy.so`.
     ```sh
