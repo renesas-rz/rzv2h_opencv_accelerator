@@ -322,6 +322,12 @@ Following is the buffer flow for RZ/V2H application.
 <img src=./img/facemosaic_buffer_flow.png width="800">
 
 
+## Reference
+- For RZ/V2H EVK, this application supports USB camera only with 640x480 resolution.  
+FHD resolution is supported by e-CAM22_CURZH camera (MIPI).  
+Please refer to following URL for how to change camera input to MIPI camera.  
+[https://renesas-rz.github.io/rzv_ai_sdk/latest/about-applications](https://renesas-rz.github.io/rzv_ai_sdk/latest/about-applications#mipi).  
+
 ## License
 For AI model, see following directory..  
 |Board | AI Model | License directory|
