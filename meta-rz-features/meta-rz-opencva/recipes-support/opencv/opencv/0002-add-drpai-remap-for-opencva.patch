@@ -1,0 +1,621 @@
+diff --git a/modules/imgproc/include/opencv2/imgproc.hpp b/modules/imgproc/include/opencv2/imgproc.hpp
+index 2a3a803..d939248 100644
+--- a/modules/imgproc/include/opencv2/imgproc.hpp
++++ b/modules/imgproc/include/opencv2/imgproc.hpp
+@@ -2400,6 +2400,11 @@ CV_EXPORTS_W void remap( InputArray src, OutputArray dst,
+                          int interpolation, int borderMode = BORDER_CONSTANT,
+                          const Scalar& borderValue = Scalar());
+ 
++CV_EXPORTS_W int remap_drp( InputArray src, OutputArray dst,
++                         InputArray map1, InputArray map2,
++                         int interpolation, int borderMode = BORDER_CONSTANT,
++                         const Scalar& borderValue = Scalar());
++
+ /** @brief Converts image transformation maps from one representation to another.
+ 
+ The function converts a pair of maps for remap from one representation to another. The following
+diff --git a/modules/imgproc/include/rzv2ma_drp.h b/modules/imgproc/include/rzv2ma_drp.h
+index 82af874..0fa9f81 100644
+--- a/modules/imgproc/include/rzv2ma_drp.h
++++ b/modules/imgproc/include/rzv2ma_drp.h
+@@ -116,6 +116,9 @@ const static int DRP_CONFLICT_ERROR = -5;
+ #define PARAM_NO_FAST (15)   // circuit No of fast
+ #define PARAM_SIZE_FAST (56) // param size of fast
+ 
++#define PARAM_NO_REMAP (16)   // circuit No of remap
++#define PARAM_SIZE_REMAP (56) // param size of remap
++
+ /* OCA Circuit activate*/
+ /* input param */
+ #define CIRCUIT_INPARAM_INACTIVATE (0)
+@@ -207,10 +210,15 @@ public:
+ 
+     int setFastParameter(uint16_t src_width, uint16_t src_height, uint16_t src_ch, uint16_t threshold);
+ 
++    int setRemapParameter(uint16_t src_width, uint16_t src_height, uint16_t src_ch,
++                uint16_t dst_width, uint16_t dst_height, uint32_t border_color);
++
+     int setSrcImage(uint8_t *srcImgData);
+ 
+     int setMatchTempl(uint8_t *templData);
+ 
++    int setMapData(uint8_t *mapData);
++
+     int execDRP(void);
+ 
+     int readDstImage(uint8_t *dstImgData);
+@@ -235,6 +243,8 @@ private:
+ 
+     void tmpl_adr_64aligment(void);
+ 
++    void map_adr_64aligment(void);
++
+     uint64_t opencv_bin_addr64_phy;     // physical memory area address (64bit)
+     
+     uint8_t opencv_bin_p[OCA_BIN_SIZE];      // opencva binary area(3.6M Byte = 400*1024*9 Byte)
+@@ -264,10 +274,12 @@ private:
+     uint64_t dst_adr;   // physical address of dst
+     uint64_t tmpl_adr;  // physical address of match template
+     uint64_t corner_adr;// physical address of detected corners
++    uint64_t map_adr;   // physical address of map
+ 
+     uint32_t src_size;
+     uint32_t dst_size;
+     uint32_t tmpl_size;
++    uint32_t map_size;
+     
+     drp_data_t proc[DRP_SEQ_NUM * 2];
+ 
+diff --git a/modules/imgproc/src/imgwarp.cpp b/modules/imgproc/src/imgwarp.cpp
+index 9318b94..546bc89 100644
+--- a/modules/imgproc/src/imgwarp.cpp
++++ b/modules/imgproc/src/imgwarp.cpp
+@@ -1662,6 +1662,206 @@ private:
+ 
+ }
+ 
++int cv::remap_drp(InputArray _src, OutputArray _dst,
++              InputArray _map1, InputArray _map2,
++              int interpolation, int borderMode, const Scalar& borderValue)
++{
++    CV_LOG_INFO(nullptr, "remap_drp start.");
++
++    /* get single instance */
++    rzv2m_drp *drp = rzv2m_drp::get_instance();
++    if(NULL == drp)
++    {
++        CV_LOG_INFO(nullptr, "remap_drp get instance");
++        return DRP_NOT_EXECUTE;
++    }
++
++    int result = DRP_NORMAL_END;
++
++    /* get possible flag */
++    int remap_possiblef = drp->get_drp_possiblef(PARAM_NO_REMAP);
++
++    /* active status only */
++    if(remap_possiblef != CIRCUIT_POSSIBLEF_ACTIVE)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* to convert to Mat class */
++    Mat src_mat = _src.getMat();
++    Mat map_mat = _map1.getMat();
++
++    /* to set remap spec */
++    uint32_t src_width = src_mat.size().width;
++    uint32_t src_height = src_mat.size().height;
++    uint32_t src_ch = src_mat.channels();
++    int src_depth = src_mat.depth();
++
++    uint32_t map_width = map_mat.size().width;
++    uint32_t map_height = map_mat.size().height;
++    int map_depth = map_mat.depth();
++
++    /* checking src width */
++    if(3840 < src_width || 16 > src_width || 0 != src_width % 2)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* checking src height */
++    if(2160 < src_height || 16 > src_height || 0 != src_height % 2)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* checking src channel size */
++    if((1 > src_ch) || (4 < src_ch))
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* checking src depth */
++    if(CV_8U != src_depth)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* checking map1 width */
++    if(3840 < map_width || 16 > map_width || 0 != map_width % 2)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* checking map1 height */
++    if(2160 < map_height || 16 > map_height || 0 != map_height % 2)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* checking map1 depth */
++    if(CV_32F != map_depth)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* checking map2 isn't empty */
++    if(!_map2.empty())
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* checking interpolation */
++    if(interpolation != INTER_LINEAR)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* checking borderMode */
++    if(borderMode != BORDER_CONSTANT)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* dst src size */
++    uint32_t dst_width = map_width;
++    uint32_t dst_height = map_height;
++    uint16_t dst_ch = src_ch;
++
++    /* output image buffer */
++    uint8_t *out_image_buffer;
++
++    /* border value */
++    uint32_t border_value_32t = 0;
++    uint8_t bgra_8t[4];
++
++    bgra_8t[0] = borderValue(0); //B
++    bgra_8t[1] = borderValue(1); //G
++    bgra_8t[2] = borderValue(2); //R
++    bgra_8t[3] = borderValue(3); //A
++
++    memcpy(&border_value_32t, bgra_8t, 4);
++
++    out_image_buffer = new uint8_t[dst_width*dst_height*dst_ch];
++
++    /* check continuous src */
++    if(!src_mat.isContinuous())
++    {
++        src_mat = src_mat.clone();
++    }
++
++    /* check continuous map */
++    if(!map_mat.isContinuous())
++    {
++        map_mat = map_mat.clone();
++    }
++
++    /* set in process to driver */
++    if(drp->set_drp_start() == DRP_CONFLICT_ERROR)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* reading opencva binary header info */
++    result = drp->readBinaryHeader();
++    if(DRP_NORMAL_END != result)
++    {
++        CV_LOG_INFO(nullptr, "rmap_drp read header error.");
++        drp->set_drp_end();
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* to set remap parameter */
++    result = drp->setRemapParameter(src_width, src_height, src_ch, dst_width, dst_height, border_value_32t);
++    if(DRP_NORMAL_END != result)
++    {
++        drp->set_drp_end();
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* to set remap src image to drp input area */
++    result = drp->setSrcImage(src_mat.data);
++    if(DRP_NORMAL_END != result)
++    {
++        drp->set_drp_end();
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* to set remap map data to drp input area */
++    result = drp->setMapData(map_mat.data);
++    if(DRP_NORMAL_END != result)
++    {
++        drp->set_drp_end();
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* executing drp process */
++    result = drp->execDRP();
++    if(DRP_NORMAL_END != result)
++    {
++        drp->set_drp_end();
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* to read warpPerspective dst image from drp output area */
++    result = drp->readDstImage(out_image_buffer);
++    if(DRP_NORMAL_END != result)
++    {
++        drp->set_drp_end();
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* to convert mat object */
++    Mat dst_mat_out =  Mat(dst_height, dst_width, CV_8UC(dst_ch), out_image_buffer);
++    dst_mat_out.copyTo(_dst);
++
++    delete[] out_image_buffer;
++
++    drp->set_drp_end();
++
++    CV_LOG_INFO(nullptr, "remap_drp end.");
++
++    return DRP_NORMAL_END;
++}
++
+ void cv::remap( InputArray _src, OutputArray _dst,
+                 InputArray _map1, InputArray _map2,
+                 int interpolation, int borderType, const Scalar& borderValue )
+@@ -1724,6 +1924,14 @@ void cv::remap( InputArray _src, OutputArray _dst,
+ 
+     CV_Assert( dst.cols < SHRT_MAX && dst.rows < SHRT_MAX && src.cols < SHRT_MAX && src.rows < SHRT_MAX );
+ 
++    int result = cv::remap_drp(_src, _dst, _map1, _map2, interpolation, borderType, borderValue);
++    if(result == DRP_NORMAL_END)
++    {
++        return;
++    }
++
++    CV_LOG_INFO(nullptr, "remap_drp continue to normal opencv.");
++
+     if( dst.data == src.data )
+         src = src.clone();
+ 
+diff --git a/modules/imgproc/src/rzv2ma_drp.cpp b/modules/imgproc/src/rzv2ma_drp.cpp
+index e5ae19f..36be693 100644
+--- a/modules/imgproc/src/rzv2ma_drp.cpp
++++ b/modules/imgproc/src/rzv2ma_drp.cpp
+@@ -284,6 +284,7 @@ int rzv2m_drp::setResizeParameter(uint16_t src_width, uint16_t src_height, uint1
+     src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next to DRP parameter area
+     dst_adr = src_adr + src_size;
+     tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
+     
+     dst_adr_64aligment();
+                             
+@@ -375,6 +376,7 @@ int rzv2m_drp::setYUV2RGBParameter(uint16_t src_width, uint16_t src_height, uint
+     src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next to DRP parameter area
+     dst_adr = src_adr + src_size;
+     tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
+ 
+     dst_adr_64aligment();
+ 
+@@ -469,6 +471,7 @@ int rzv2m_drp::setYUV2NVParameter(uint16_t src_width, uint16_t src_height, uint1
+     src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next address to drp parameter
+     dst_adr = src_adr + src_size; // next address to input image
+     tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
+ 
+     dst_adr_64aligment();
+ 
+@@ -563,6 +566,7 @@ int rzv2m_drp::setGaussianParameter(uint16_t src_width, uint16_t src_height, uin
+     src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next address to drp parameter
+     dst_adr = src_adr + src_size; // next address to input image
+     tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
+ 
+     dst_adr_64aligment();
+ 
+@@ -656,6 +660,7 @@ int rzv2m_drp::setMorphologyParameter(uint16_t src_width, uint16_t src_height, u
+     src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next address to drp parameter
+     dst_adr = src_adr + src_size; // next address to input image
+     tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
+ 
+     dst_adr_64aligment();
+ 
+@@ -742,6 +747,7 @@ int rzv2m_drp::setSobelParameter(uint16_t src_width, uint16_t src_height, uint16
+     src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next to DRP parameter area
+     dst_adr = src_adr + src_size;
+     tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
+ 
+     dst_adr_64aligment();
+                                        
+@@ -835,6 +841,7 @@ int rzv2m_drp::setFilter2dParameter(uint16_t src_width, uint16_t src_height, uin
+     src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next address to drp parameter
+     dst_adr = src_adr + src_size; // next address to input image
+     tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
+ 
+     dst_adr_64aligment();
+ 
+@@ -937,6 +944,7 @@ int rzv2m_drp::setAdaptiveThreshold(uint16_t src_width, uint16_t src_height, uin
+     src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next address to drp parameter
+     dst_adr = src_adr + src_size; // next address to input image
+     tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
+ 
+     dst_adr_64aligment();
+ 
+@@ -1034,6 +1042,7 @@ int rzv2m_drp::setMatchTemplateParameter(uint16_t src_width, uint16_t src_height
+     /* to write drp parameters to memory area */
+     src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next address to drp parameter
+     tmpl_adr = src_adr + src_size; // next address to template
++    map_adr = NULL;
+ 
+     tmpl_adr_64aligment();
+ 	
+@@ -1179,6 +1188,7 @@ int rzv2m_drp::setWarpAffineParameter(uint16_t src_width, uint16_t src_height, u
+     src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next to DRP parameter area
+     dst_adr = src_adr + src_size;
+     tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
+     
+     dst_adr_64aligment();
+                             
+@@ -1272,6 +1282,7 @@ int rzv2m_drp::setPyrDownParameter(uint16_t src_width, uint16_t src_height, uint
+     src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next to DRP parameter area
+     dst_adr = src_adr + src_size;
+     tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
+     
+     dst_adr_64aligment();
+                             
+@@ -1357,6 +1368,7 @@ int rzv2m_drp::setPyrUpParameter(uint16_t src_width, uint16_t src_height, uint16
+     src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next to DRP parameter area
+     dst_adr = src_adr + src_size;
+     tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
+     
+     dst_adr_64aligment();
+                             
+@@ -1443,6 +1455,7 @@ int rzv2m_drp::setWarpPerspectiveParameter(uint16_t src_width, uint16_t src_heig
+     src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next to DRP parameter area
+     dst_adr = src_adr + src_size;
+     tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
+     
+     dst_adr_64aligment();
+                             
+@@ -1537,6 +1550,7 @@ int rzv2m_drp::setFastParameter(uint16_t src_width, uint16_t src_height, uint16_
+     src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE; // next to DRP parameter area
+     dst_adr = src_adr + src_size;
+     tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
+  
+     dst_adr_64aligment();
+ 
+@@ -1601,6 +1615,159 @@ int rzv2m_drp::setFastParameter(uint16_t src_width, uint16_t src_height, uint16_
+     return DRP_NORMAL_END;
+ }
+ 
++/**************************************************************************************************************
++* Method Name   : setRemapParameter
++* Description   : to set REMAP parameter to drp
++* Arguments     : src_width    = src image width,
++                  src_height   = src image height,
++                  src_ch       = src image channels,
++                  dst_width    = dst image width,
++                  dst_height   = dst image height,
++                  border_color = color
++* Return value  : DRP_NORMAL_END if succeeded
++*                 DRP_PARAM_ERROR otherwise
++***************************************************************************************************************/
++int rzv2m_drp::setRemapParameter(uint16_t src_width, uint16_t src_height, uint16_t src_ch,
++                uint16_t dst_width, uint16_t dst_height, uint32_t border_color)
++{
++    int ret = 0;
++    int circuit_no = PARAM_NO_REMAP; // REMAP circuit index
++    uint8_t drp_remap_param[PARAM_SIZE_REMAP];
++
++    src_size = src_width * src_height * src_ch;
++    dst_size = dst_width * dst_height * src_ch;
++
++    map_size = dst_width * dst_height * sizeof(float) * 2;
++
++    possiblef    = *(uint32_t *)(&opencv_bin_p[opencv_bin_list_base + 32 * circuit_no]);     // existence flag of circuit data
++    drp_position = *(uint32_t *)(&opencv_bin_p[opencv_bin_list_base + 32 * circuit_no + 4]); // address at circuit data (offset value from CONFIG_BASE)
++    drp_size     = *(uint32_t *)(&opencv_bin_p[opencv_bin_list_base + 32 * circuit_no + 8]); // size of REMAP circuit
++
++    /*  calculate address value of input image and output image */
++    src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE; // next to DRP parameter area
++
++    dst_adr = src_adr + src_size;
++    tmpl_adr = NULL;    //for 40bit addr
++
++    dst_adr_64aligment();
++
++    map_adr = dst_adr + dst_size;
++
++    map_adr_64aligment();
++
++    /* set REMAP drp rapameter to local variables */
++    *((uint32_t *)(&drp_remap_param[0]))  = src_adr;      // src image address
++    *((uint32_t *)(&drp_remap_param[4]))  = dst_adr;      // dst image address
++    *((uint16_t *)(&drp_remap_param[8]))  = src_width;    // input width (pixel)
++    *((uint16_t *)(&drp_remap_param[10])) = src_height;   // input height (pixel)
++    *((uint16_t *)(&drp_remap_param[12])) = src_ch;       // input channels (1 fixed)
++    *((uint16_t *)(&drp_remap_param[14])) = 0;            // reserved (0 fixed)
++    *((uint16_t *)(&drp_remap_param[16])) = dst_width;    // output width (pixel)
++    *((uint16_t *)(&drp_remap_param[18])) = dst_height;   // output height (pixel)
++    *((uint16_t *)(&drp_remap_param[20])) = 0;            // reserved (0 fixed)
++    *((uint16_t *)(&drp_remap_param[22])) = 0;            // reserved (0 fixed)
++    memset(&drp_remap_param[24], 0, 16);                  // sync set
++    *((uint16_t *)(&drp_remap_param[40])) = 0;            // CPU ionterupt on (0 fixed)
++    memset(&drp_remap_param[42], 0, 6);                   // reserved (0 fixed)
++    *((uint32_t *)(&drp_remap_param[48])) = map_adr;      // map address
++    *((uint32_t *)(&drp_remap_param[50])) = border_color; // color
++
++    /* to write drp parameters to memory area */
++    proc[DRPPARAM1].address = opencv_bin_addr64_phy + opencv_bin_param_base; // pysical address
++    proc[DRPPARAM1].size = PARAM_SIZE_REMAP;                                  // size of param (56 byte)
++
++    do
++    {
++        errno = 0;
++        ret = ioctl(fd_drp, DRP_ASSIGN, &proc[DRPPARAM1]); // to assign to drp area
++    } while ((-1 == ret) && (ERESTART == errno));
++
++    if ((0 != ret) && (EACCES == errno))
++    {
++        conflict_action_exec();
++        return DRP_NOT_EXECUTE;
++    }
++
++    if (!((0 == ret) && (0 == errno)))
++    {
++        fprintf(stderr, "[ERROR] Failed to assign DRP parameter11111\n");
++
++        return DRP_PARAM_ERROR;
++    }
++
++    do
++    {
++        errno = 0;
++        ret = write(fd_drp, drp_remap_param, PARAM_SIZE_REMAP); // to write parameter to specified address
++    } while ((-1 == ret) && (ERESTART == errno));
++
++    if ((-1 == ret) && (EACCES == errno))
++    {
++        conflict_action_exec();
++        return DRP_NOT_EXECUTE;
++    }
++
++    if (ret != PARAM_SIZE_REMAP)
++    {
++        fprintf(stderr, "[ERROR] Failed to write DRP parameter\n");
++        return DRP_PARAM_ERROR;
++    }
++
++    return DRP_NORMAL_END;
++}
++
++/*****************************************
++* Method Name   : setMapData
++* Description   : to set map data to drp input area
++* Arguments     : mapData = map data area
++* Return value  : DRP_NORMAL_END if succeeded
++*                 DRP_SRC_IMAGE_ERROR otherwise
++******************************************/
++ int rzv2m_drp::setMapData(uint8_t *mapData)
++ {
++    int ret = 0;
++
++    drp_data_t map_data;
++    map_data.address = map_adr;          // physical memory address of input map area
++    map_data.size = map_size;            // input map size
++
++    do
++    {
++        errno = 0;
++        ret = ioctl(fd_drp, DRP_ASSIGN, &map_data);
++    } while ((-1 == ret) && (ERESTART == errno));
++
++    if ((0 != ret) && (EACCES == errno))
++    {
++        conflict_action_exec();
++        return DRP_NOT_EXECUTE;
++    }
++
++    if (!((0 == ret) && (0 == errno)))
++    {
++        return DRP_SRC_IMAGE_ERROR;
++    }
++
++    do
++    {
++        errno= 0;
++        ret = write(fd_drp, mapData, map_size);
++    } while ((-1 == ret) && (ERESTART == errno));
++
++    if ((-1 == ret) && (EACCES == errno))
++    {
++        conflict_action_exec();
++        return DRP_NOT_EXECUTE;
++    }
++
++    if ((uint32_t)ret != map_size)
++    {
++        return DRP_SRC_IMAGE_ERROR;
++    }
++
++    return DRP_NORMAL_END;
++ }
++
+ /*****************************************
+ * Method Name   : setSrcImage
+ * Description   : to set src image to drp input area
+@@ -1686,17 +1853,24 @@ int rzv2m_drp::execDRP(void)
+     seq.iodata[1].size    = dst_size;
+     seq.iodata[1].pos     = 4;
+     
+-    if( tmpl_adr == NULL )
++    if( ( tmpl_adr == NULL ) && ( map_adr == NULL ) )
+     {
+         seq.iodata_num          = 2;
+     }
+-    else
++    else if( tmpl_adr != NULL )
+     {
+         seq.iodata_num          = 3;    //Template matching
+         seq.iodata[2].address   = tmpl_adr;
+         seq.iodata[2].size      = tmpl_size;
+         seq.iodata[2].pos       = 48;
+     }
++    else if( map_adr != NULL )
++    {
++        seq.iodata_num          = 3;    //Remap
++        seq.iodata[2].address   = map_adr;
++        seq.iodata[2].size      = map_size;
++        seq.iodata[2].pos       = 48;
++    }
+     
+ #endif
+     
+@@ -1851,6 +2025,23 @@ void rzv2m_drp::tmpl_adr_64aligment()
+     return;
+ }
+ 
++/*****************************************
++* Method Name   : map_adr_64aligment()
++* Description   : calc 64 bit aligment address
++* Arguments     : none
++* Return value  : void
++******************************************/
++void rzv2m_drp::map_adr_64aligment()
++{
++    /* 64bit aligment */
++    uint32_t align = 0;
++
++    align = 64 - (map_adr % 64);
++    map_adr = map_adr + align; 
++
++    return;
++}
++
+ /*****************************************
+ * Method Name   : readDstImage
+ * Description   : to read dst image from drp output area

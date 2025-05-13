@@ -39,7 +39,7 @@ If DRP is [enabled](#51-oca_activate) and the parameters of OpenCV meet the [con
 The output OpenCVA using DRP is almost identical to output OpenCV using CPU, but not exactly the same. Much of this difference is due to the accuracy of in the DRP's arithmetic unit, and some is due to differences in algorithms.
 
 <br><span style="color: red; ">
-**DRP is also used for video decoding function, however since DRP is a common HW resource, OpenCVA and video decoding function cannot be used at the same time. For the same reason, OpenCVA must be used in single process and single thread. In case of conflicting use of DRP, it causes an exception errors or performance degradation.    
+**DRP is also used for video decoding function, however since DRP is a common HW resource, OpenCVA and video decoding function cannot be used at the same time. In case of conflicting use of DRP, it causes an exception errors or performance degradation.    
 For details, please see [Chapter 5.2](#52-oca_conflictnotification) and [Chapter 6](#6-drp-conflict).**
 </span><br>
 
@@ -82,6 +82,7 @@ The following table lists the OpenCV functions that can be executed using DRP in
 | [4.14. pyrDown](#414-pyrdown) | Downsampling step of the Gaussian pyramid construction. |
 | [4.15. pyrUp](#415-pyrup) | Upsampling step of the Gaussian pyramid construction. |
 | [4.16. FAST](#416-fast) | Detects corners using the FAST algorithm. |
+| [4.17. remap](#417-remap) | Applies a generic geometrical transformation to an image. |
 
 # 4. OpenCVA API specification and condition for using DRP
 This chapter describes the OpenCV API that can be executed by DRP, and their conditions for using DRP.
@@ -512,6 +513,35 @@ If the following conditions apply, OpenCVA execute FAST process using DRP.
 | nonmaxSuppression | true | default value |
 | type | FastFeatureDetector::TYPE_9_16 | default value |
 
+## 4.17. remap
+
+### 4.17.1. outline
+Applies a generic geometrical transformation to an image.  
+```
+void cv::remap (InputArray src, OutputArray dst, InputArray map1, InputArray map2, int interpolation, int borderMode = BORDER_CONSTANT, const Scalar & borderValue = Scalar())
+```
+| parameter | required/optional | description |
+| --------- | ----------------- | ----------- |
+| src | required | Source image. |
+| dst | required | Destination image. It has the same size as map1 and the same type as src. |
+| map1 | required | The first map of either (x,y) points or just x values having the type CV_16SC2, CV_32FC1, or CV_32FC2. See convertMaps for details on converting a floating point representation to fixed-point for speed. |
+| map2 | optional | The second map of y values having the type CV_16UC1, CV_32FC1, or none (empty map if map1 is (x,y) points), respectively. |
+| interpolation | optional | Interpolation method (see [InterpolationFlags](https://docs.opencv.org/4.1.0/da/d54/group__imgproc__transform.html#ga5bb5a1fea74ea38e1a5445ca803ff121)). The method [INTER_AREA](https://docs.opencv.org/4.1.0/da/d54/group__imgproc__transform.html#gga5bb5a1fea74ea38e1a5445ca803ff121acf959dca2480cc694ca016b81b442ceb) is not supported by this function. |
+| borderMode | optional | Pixel extrapolation method (see [BorderTypes](https://docs.opencv.org/4.1.0/d2/de8/group__core__array.html#ga209f2f4869e304c82d07739337eae7c5)). When borderMode=[BORDER_TRANSPARENT](https://docs.opencv.org/4.1.0/d2/de8/group__core__array.html#gga209f2f4869e304c82d07739337eae7c5a886a5eb6b466854d63f9e742d5c8eefe), it means that the pixels in the destination image that corresponds to the "outliers" in the source image are not modified by the function. |
+| borderValue | optional | Value used in case of a constant border. By default, it is 0. |
+
+Note: Due to current implementation limitations the size of an input and output images should be less than 32767x32767.  
+
+### 4.17.2. Conditions for using DRP
+If the following conditions apply, OpenCVA execute remap process using DRP.
+| parameter | range/values | note |
+| --------- | ------------ | ---- |
+| src | width: 16 or more, even<br> height: 16 or more, even<br> channels: 4 or less<br> bit-depth: 8bit<br> size limit: 4K(3840x2160) | |
+| map1 | width: 16 or more, even<br> height: 16 or more, even<br> type: CV_32FC2<br> size limit: 4K(3840x2160)<br>Not fragmented. |  |
+| map2 | none | |
+| interpolation | INTER_LINEAR | |
+| borderMode | BORDER_CONSTANT | |
+
 # 5. API functions to control OpenCVA
 This chapter describes API functions to control OpenCVA.
 
@@ -553,6 +583,7 @@ The argument of the API function is the array variable OCA_list[]. See the follo
 | 13 | perUp |
 | 14 | warpPerspective |
 | 15 | FAST |
+| 16 | remap |
 | Others | (unused) |    
 
 *note: OCA_list[] table type and size is “unsigned long OCA_list[16]”.*
@@ -607,13 +638,9 @@ This chapter describes DRP conflict.
 OpenCVA use “Dynamically Reconfigurable Processor” (=DRP). And the video decoding functions use the same DRP. There is only one DRP used by these functions on a device. And the function occupies the DRP while it is executing.  
 If the OpenCV use the DRP but is unable to do so because the DRP is already being used by another function, this is called “DRP conflict.”  
   
-OpenCVA cause DRP conflicts in the following 2cases:  
-case1. Case of start OpenCV using DRP, while the video decoding function uses DRP in parallel.  
-case2. Case of start OpenCV using DRP, while other OpenCV is using DRP in another process (or thread).  
+OpenCVA cause DRP conflicts in the case of start OpenCV using DRP, while the video decoding function uses DRP in parallel.
   
-If neither of the 2cases matches, then the DRP does not conflict. i.e.,  
-1. Video decoding and OpenCV using DRP are executed sequentially.  
-2. OpenCV using DRP is executed by single process/thread.  
+If the case doesn't matches, then the DRP does not conflict, i.e., video decoding and OpenCV using DRP are executed sequentially.  
   
 ## 6.2. What happened if there was a conflict, and how to handle it
 If the OpenCVA occurred DRP conflict, it raises an exception error or execute OpenCV function by CPU instead of the DRP. (selected by the OCA_ConflictNotification()).  

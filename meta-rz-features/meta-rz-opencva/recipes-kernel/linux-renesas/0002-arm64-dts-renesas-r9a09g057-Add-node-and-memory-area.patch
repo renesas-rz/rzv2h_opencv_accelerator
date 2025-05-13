@@ -1,0 +1,87 @@
+From 05533f061757706d9b4d348a700eefe71ef22aaf Mon Sep 17 00:00:00 2001
+From: Kiet Pham <kiet.pham.xb@renesas.com>
+Date: Tue, 3 Dec 2024 11:30:14 +0700
+Subject: [PATCH] arm64: dts: renesas: r9a09g057: Add node and memory area for
+ DRPB
+
+---
+ arch/arm64/boot/dts/renesas/r9a09g057.dtsi            | 9 +++++++++
+ arch/arm64/boot/dts/renesas/r9a09g057h4-dev.dts       | 6 ++++++
+ arch/arm64/boot/dts/renesas/r9a09g057h4-evk-alpha.dts | 6 ++++++
+ arch/arm64/boot/dts/renesas/r9a09g057h4-evk-ver1.dts  | 6 ++++++
+ 4 files changed, 27 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/renesas/r9a09g057.dtsi b/arch/arm64/boot/dts/renesas/r9a09g057.dtsi
+index 169a651842eb..dbb916480a54 100644
+--- a/arch/arm64/boot/dts/renesas/r9a09g057.dtsi
++++ b/arch/arm64/boot/dts/renesas/r9a09g057.dtsi
+@@ -1901,6 +1901,15 @@
+ 			status = "disabled";
+ 		};
+ 
++		drp1: drp1@18000000 {
++			compatible = "renesas,rzv2h-drp";
++			reg = <0 0x18000000 0 0x1000000>;
++			interrupts = <GIC_SPI 912 IRQ_TYPE_LEVEL_HIGH>,
++				    <GIC_SPI 913 IRQ_TYPE_LEVEL_HIGH>;
++			resets = <&cpg R9A09G057_DRP_ARESETN>;
++			status = "disabled";
++		};
++
+ 		rcar_sound: sound@13c00000 {
+ 			/*
+ 			 * #sound-dai-cells is required
+diff --git a/arch/arm64/boot/dts/renesas/r9a09g057h4-dev.dts b/arch/arm64/boot/dts/renesas/r9a09g057h4-dev.dts
+index d906abe4bb30..1d1325d5ea6b 100644
+--- a/arch/arm64/boot/dts/renesas/r9a09g057h4-dev.dts
++++ b/arch/arm64/boot/dts/renesas/r9a09g057h4-dev.dts
+@@ -480,6 +480,12 @@
+ 	status = "okay";
+ };
+ 
++&drp1 {
++	memory-region = <&drp_codec>;
++	memory-oca-region = <&opencva_reserved>;
++	status = "okay";
++};
++
+ &xhci0 {
+ 	pinctrl-0 = <&usb30_pins>;
+ 	pinctrl-names = "default";
+diff --git a/arch/arm64/boot/dts/renesas/r9a09g057h4-evk-alpha.dts b/arch/arm64/boot/dts/renesas/r9a09g057h4-evk-alpha.dts
+index 57a1381e3206..9521d009d1ec 100644
+--- a/arch/arm64/boot/dts/renesas/r9a09g057h4-evk-alpha.dts
++++ b/arch/arm64/boot/dts/renesas/r9a09g057h4-evk-alpha.dts
+@@ -976,6 +976,12 @@
+ };
+ #endif
+ 
++&drp1 {
++	memory-region = <&drp_codec>;
++	memory-oca-region = <&opencva_reserved>;
++	status = "okay";
++};
++
+ &xhci0 {
+ 		pinctrl-0 = <&usb30_pins>;
+ 		pinctrl-names = "default";
+diff --git a/arch/arm64/boot/dts/renesas/r9a09g057h4-evk-ver1.dts b/arch/arm64/boot/dts/renesas/r9a09g057h4-evk-ver1.dts
+index 0e9c6fafc9d8..2a0e86ebc5c1 100644
+--- a/arch/arm64/boot/dts/renesas/r9a09g057h4-evk-ver1.dts
++++ b/arch/arm64/boot/dts/renesas/r9a09g057h4-evk-ver1.dts
+@@ -922,6 +922,12 @@
+ 	};
+ };
+ 
++&drp1 {
++	memory-region = <&drp_codec>;
++	memory-oca-region = <&opencva_reserved>;
++	status = "okay";
++};
++
+ &xhci0 {
+ 		pinctrl-0 = <&usb30_pins>;
+ 		pinctrl-names = "default";
+-- 
+2.17.1
+

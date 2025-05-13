@@ -1,0 +1,255 @@
+diff --git a/modules/imgproc/src/rzv2ma_drp.cpp b/modules/imgproc/src/rzv2ma_drp.cpp
+index e5ae19f..44d39ce 100644
+--- a/modules/imgproc/src/rzv2ma_drp.cpp
++++ b/modules/imgproc/src/rzv2ma_drp.cpp
+@@ -35,6 +35,7 @@
+ #include <sys/stat.h>
+ #include <errno.h>
+ #include <mutex>
++#include <semaphore.h>
+ 
+ #include <thread>
+ #include <sstream>
+@@ -42,6 +43,13 @@
+ #include <opencv2/core/base.hpp>
+ #include <opencv2/core/utils/logger.hpp>
+ 
++/*****************************************
++*  MACROS/DEFINES
++******************************************/
++#define SHM_SEMAPHORE_PATH    "/libdrp_api.so"
++#define SEM_TIMEOUT_SEC      (60) /* 60sec */
++#define SEM_TIMEOUT_NSEC     (60 * 1e6) /* 60msec */
++
+ /* single instance of rzv2m drp */
+ rzv2m_drp* rzv2m_drp::_singleton = NULL;
+ 
+@@ -60,6 +68,15 @@ std::mutex drp_initialize_mutex;
+ /* mutex for initialize for api sequence */
+ std::mutex drp_init_for_api_mutex;
+ 
++/* semaphore for initializing */
++static int g_initializing = 0;
++
++/* semaphore for result */
++static sem_t * g_sem = NULL;
++
++/* semaphore for waiting process counter*/
++static int waiting_count = 0;
++
+ /*****************************************
+ * Method Name   : rzv2m_drp
+ * Description   : Constructor
+@@ -2077,6 +2094,177 @@ int rzv2m_drp::readCornerPoints(std::vector<cv::KeyPoint> &keypoints)
+     return DRP_NORMAL_END;
+ }
+ 
++/*****************************************
++* Method Name   : DRP_sem_open(void)
++* Description   : Open DRP semaphore
++* Arguments     :  
++* Return value  : =0:reset ok, <0: reset error 
++******************************************/
++static int DRP_sem_open(void)
++{
++    int ret = 0;
++
++    while (1 == g_initializing)
++    {
++        usleep(100);   /* 0.1 msec */
++    }
++    if ((NULL != g_sem) && (SEM_FAILED != g_sem))
++    {
++        /* Already opened */
++        return 0;
++    }
++    g_initializing = 1;
++
++    errno = 0;
++    g_sem = sem_open(SHM_SEMAPHORE_PATH, O_RDWR | O_CREAT | O_EXCL, 0660, 1);
++    if (EEXIST == errno)
++    {
++        CV_LOG_INFO(nullptr, "DRP_sem is already exists. Open Created sem.");
++        waiting_count = 0;
++        g_sem = sem_open(SHM_SEMAPHORE_PATH, O_RDWR);
++    }
++    else if (SEM_FAILED == g_sem)
++    {
++        CV_LOG_INFO(nullptr, "failed to open DRP semaphore file");
++        g_sem = NULL;
++        ret = -1;
++    }
++
++    if (0 != ret)
++    {
++        CV_LOG_INFO(nullptr, "Failed in DRP_sem_open");
++    }
++    g_initializing = 0;
++    return ret;
++}
++
++/*****************************************
++* Method Name   : DRP_sem_close(void)
++* Description   : Close DRP semaphore
++* Arguments     :  
++* Return value  : =0:reset ok, <0: reset error 
++******************************************/
++static int DRP_sem_close(void)
++{
++    CV_LOG_INFO(nullptr, "DRP_sem_close start.");
++    int ret = 0;
++
++    if (1 == g_initializing)
++    {
++        usleep(100);   /* 0.1 msec */
++    }
++
++    if ((NULL == g_sem) || (SEM_FAILED == g_sem))
++    {
++        /* sem is not existed */
++        return 0;
++    }
++    g_initializing = 1;
++    
++    ret = sem_close(g_sem);
++    if (0 != ret)
++    {
++        CV_LOG_INFO(nullptr,"Failed in DRP_sem_close");
++    }
++    g_sem = NULL;
++    g_initializing = 0;
++    waiting_count = 0;
++
++    return ret;
++}
++
++/*****************************************
++* Method Name   : DRP_sem_post(void)
++* Description   : Post DRP semaphore
++* Arguments     :  
++* Return value  : =0:reset ok, <0: reset error 
++******************************************/
++static int DRP_sem_post(void)
++{
++    int sval = -1;
++    int ret;
++
++    waiting_count --;
++
++    CV_LOG_INFO(nullptr,"DRP_sem_post start");
++    CV_LOG_INFO(nullptr, "DRP_sem_post in DRP_sem_open start.");
++    ret = DRP_sem_open();
++    if (0 != ret)
++    {
++        return ret;
++    }
++    ret = sem_getvalue(g_sem, &sval);
++    if (0 != ret)
++    {
++        CV_LOG_INFO(nullptr, "try sem_post, but sem is invalid.");
++        return -1;
++    }
++    /* sem value must be 0 or 1 */
++    if (0 >= sval)
++    {
++        CV_LOG_INFO(nullptr, "sem_post start. wating threads = " << waiting_count);
++        return sem_post(g_sem);
++    }
++    return 0;
++}
++
++/*****************************************
++* Method Name   : DRP_sem_wait(void)
++* Description   : Wait DRP semaphore
++* Arguments     :  
++* Return value  : =0:reset ok, <0: reset error 
++******************************************/
++static int DRP_sem_wait(void)
++{
++    int ret;
++    struct timespec timeout;
++    
++    CV_LOG_INFO(nullptr, "DRP_sem_wait start");
++    CV_LOG_INFO(nullptr, "DRP_sem_wait in DRP_sem_open start.")
++    ret = DRP_sem_open();
++    if (0 != ret)
++    {
++        return ret;
++    }
++
++    clock_gettime(CLOCK_REALTIME, &timeout);
++    timeout.tv_sec += SEM_TIMEOUT_SEC;
++    timeout.tv_nsec += SEM_TIMEOUT_NSEC;
++    if (1e9 < timeout.tv_nsec)
++    {
++        timeout.tv_sec += 1;
++        timeout.tv_nsec -= 1e9;
++    }
++
++    errno = 0;
++
++    CV_LOG_INFO(nullptr, "sem_timedwait start. waiting threads =" << waiting_count);
++    waiting_count ++;
++
++    ret = sem_timedwait(g_sem, &timeout);
++    if (ETIMEDOUT == errno)
++    {
++        CV_LOG_INFO(nullptr, "DRP semaphore is locked too long time, so unlock and try to lock again.");
++        /* try again with sem_post */
++        ret = DRP_sem_post();
++        if (0 == ret)
++        {
++            ret = DRP_sem_wait();
++        }
++        else
++        {
++            CV_LOG_INFO(nullptr, "Failed to unlock DRP semaphore.");
++        }
++    }
++
++    if (0 != ret)
++    {
++        CV_LOG_INFO(nullptr, "Failed in sem_waite");
++    }
++
++    return ret;
++}
++
+ /*****************************************
+ * Method Name   : set_drp_end()
+ * Description   : reset to OpenCVA inprocess
+@@ -2104,6 +2292,14 @@ int rzv2m_drp::set_drp_end()
+         CV_LOG_INFO(nullptr, "drp in process reset.");
+     }
+ #endif
++
++    DRP_sem_post();
++
++    if(waiting_count <= 0)
++    {
++        DRP_sem_close();
++    }
++
+     return DRP_NORMAL_END;
+ }
+ 
+@@ -2143,6 +2339,19 @@ int rzv2m_drp::set_drp_start()
+         CV_LOG_INFO(nullptr, "drp in process set.");
+     }
+ #endif
++
++    int ret_sem = 0;
++
++    // DRP_sem_wait in DRP_sem_open.
++    ret_sem = DRP_sem_wait();
++    if (0 != ret_sem)
++    {
++        CV_LOG_INFO(nullptr, "DRP_sem_wait error.");
++        // Return this error code as the calling DRP execution function determines 
++        // that execution is not possible due to DRP_CONFLICT_ERROR.
++        return DRP_CONFLICT_ERROR;
++    }
++
+     return DRP_NORMAL_END;
+ }
+ 

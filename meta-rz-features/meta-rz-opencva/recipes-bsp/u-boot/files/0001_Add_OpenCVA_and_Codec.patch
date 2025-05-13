@@ -7,9 +7,9 @@ diff -Naur a/include/configs/rzv2h-dev.h b/include/configs/rzv2h-dev.h
  	"bootimage=booti 0x48080000 - 0x48000000 \0" \
 -	"emmcload=ext4load mmc 0:2 0x48080000 boot/Image;ext4load mmc 0:2 0x48000000 boot/r9a09g057h4-dev.dtb;run prodemmcbootargs \0" \
 -	"sd2load=ext4load mmc 2:2 0x48080000 boot/Image;ext4load mmc 2:2 0x48000000 boot/r9a09g057h4-dev.dtb;run prodsdbootargs \0" \
-+	"ocaaddr=0xC0000000 \0"     \
++	"ocaaddr=0xA8000000 \0"     \
 +	"ocabin=OpenCV_Bin.bin \0"  \
-+	"codaddr=0xC7D00000 \0"     \
++	"codaddr=0xAFD00000 \0"     \
 +	"codbin=Codec_Bin.bin \0"   \
 +	"emmcload=ext4load mmc 0:2 ${ocaaddr} boot/${ocabin}; ext4load mmc 0:2 ${codaddr} boot/${codbin};ext4load mmc 0:2 0x48080000 boot/Image;ext4load mmc 0:2 0x48000000 boot/r9a09g057h4-dev.dtb;run prodemmcbootargs \0" \
 +	"sd2load=ext4load mmc 2:2 ${ocaaddr} boot/${ocabin}; ext4load mmc 2:2 ${codaddr} boot/${codbin}; ext4load mmc 2:2 0x48080000 boot/Image;ext4load mmc 2:2 0x48000000 boot/r9a09g057h4-dev.dtb;run prodsdbootargs \0" \
@@ -22,9 +22,9 @@ diff -Naur a/include/configs/rzv2h-dev.h b/include/configs/rzv2h-dev.h
  	"bootimage=run set_pmic; booti 0x48080000 - 0x48000000 \0" \
 -	"emmcload=ext4load mmc 0:2 0x48080000 boot/Image;ext4load mmc 0:2 0x48000000 boot/r9a09g057h4-evk-alpha.dtb;run prodemmcbootargs \0" \
 -	"sd1load=ext4load mmc 1:2 0x48080000 boot/Image;ext4load mmc 1:2 0x48000000 boot/r9a09g057h4-evk-alpha.dtb;run prodsdbootargs \0" \
-+	"ocaaddr=0xC0000000 \0"     \
++	"ocaaddr=0xA8000000 \0"     \
 +	"ocabin=OpenCV_Bin.bin \0"  \
-+	"codaddr=0xC7D00000 \0"     \
++	"codaddr=0xAFD00000 \0"     \
 +	"codbin=Codec_Bin.bin \0"   \
 +	"emmcload=ext4load mmc 0:2 ${ocaaddr} boot/${ocabin}; ext4load mmc 0:2 ${codaddr} boot/${codbin};ext4load mmc 0:2 0x48080000 boot/Image;ext4load mmc 0:2 0x48000000 boot/r9a09g057h4-evk-alpha.dtb;run prodemmcbootargs \0" \
 +	"sd1load=ext4load mmc 1:2 ${ocaaddr} boot/${ocabin}; ext4load mmc 1:2 ${codaddr} boot/${codbin}; ext4load mmc 1:2 0x48080000 boot/Image;ext4load mmc 1:2 0x48000000 boot/r9a09g057h4-evk-alpha.dtb;run prodsdbootargs \0" \
@@ -37,9 +37,9 @@ diff -Naur a/include/configs/rzv2h-dev.h b/include/configs/rzv2h-dev.h
  	"bootimage=booti 0x48080000 - 0x48000000 \0" \
 -	"sd0load=ext4load mmc 0:2 0x48080000 boot/Image;ext4load mmc 0:2 0x48000000 boot/r9a09g057h4-evk-ver1.dtb;run prodsd0bootargs \0" \
 -	"sd1load=ext4load mmc 1:2 0x48080000 boot/Image;ext4load mmc 1:2 0x48000000 boot/r9a09g057h4-evk-ver1.dtb;run prodsd1bootargs \0" \
-+	"ocaaddr=0xC0000000 \0"     \
++	"ocaaddr=0xA8000000 \0"     \
 +	"ocabin=OpenCV_Bin.bin \0"  \
-+	"codaddr=0xC7D00000 \0"     \
++	"codaddr=0xAFD00000 \0"     \
 +	"codbin=Codec_Bin.bin \0"   \
 +	"sd0load=ext4load mmc 0:2 ${ocaaddr} boot/${ocabin}; ext4load mmc 0:2 ${codaddr} boot/${codbin};ext4load mmc 0:2 0x48080000 boot/Image;ext4load mmc 0:2 0x48000000 boot/r9a09g057h4-evk-ver1.dtb;run prodsd0bootargs \0" \
 +	"sd1load=ext4load mmc 1:2 ${ocaaddr} boot/${ocabin}; ext4load mmc 1:2 ${codaddr} boot/${codbin}; ext4load mmc 1:2 0x48080000 boot/Image;ext4load mmc 1:2 0x48000000 boot/r9a09g057h4-evk-ver1.dtb;run prodsd1bootargs \0" \
