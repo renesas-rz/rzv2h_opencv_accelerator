@@ -580,7 +580,7 @@ The argument of the API function is the array variable OCA_list[]. See the follo
 | 10 | matchTemplate |
 | 11 | warpAffine |
 | 12 | pyrDown |
-| 13 | perUp |
+| 13 | pyrUp |
 | 14 | warpPerspective |
 | 15 | FAST |
 | 16 | remap |
@@ -594,10 +594,16 @@ Values other than 0 and 1 are ignored.
 ### [Sample]
 ```
 unsigned long OCA_list[17];
-for(int i=0; i<17; i++)OCA_list[i]=2;
+
+for (int i = 0; i < 17; i++)
+{
+    OCA_list[i] = 1;
+}
+
 /* Disable DRP(Sobel) */
-OCA_list[8] = 0;	//Disable
-OCA_Activate( &OCA_list[0] );
+OCA_list[8] = 0;
+
+OCA_Activate(&OCA_list[0]);
 ```
 
 ## 5.2 OCA_ConflictNotification
@@ -622,9 +628,9 @@ Sets the behavior when OpenCVA is executed simultaneously in multi-process or mu
 This chapter describes DRP conflict.
 
 ## 6.1. About DRP conflict
-OpenCVA uses “Dynamically Reconfigurable Processor” (=DRP). Video decoding function of Video Codec Library also uses the same DRP. There is only one DRP on a device and these functions occupy DRP while they are executing. If a function that uses DRP is already executed, another function that uses DRP cannot be executed. This is called “DRP conflict.”  
+OpenCVA uses “Dynamically Reconfigurable Processor” (=DRP). Video decoding function of Video Codec Library also uses the same DRP. There is only one DRP on a device and these functions occupy DRP while they are executing. If a function that uses DRP is already executed, another function that uses DRP cannot be executed. This is called “DRP conflict”.  
 
-Using OpenCVA and video decoding function at the same time will cause DRP conflict. By executing these functions sequentially, the DRP conflict can be avoided.  
+Using OpenCVA and video decoding function at the same time will cause DRP conflict.  
 
 ## 6.2. What happened if there was a conflict, and how to handle it
-If DRP conflict is caused, an error in OpenCVA or Video Codec Library will occur. Users should be careful not to use OpenCVA and video decoding function simultaneously.  
+If DRP conflict is caused, an error in OpenCVA or Video Codec Library will occur. By executing these functions sequentially, DRP conflict can be avoided. Users should be careful not to use OpenCVA and video decoding function simultaneously.  
