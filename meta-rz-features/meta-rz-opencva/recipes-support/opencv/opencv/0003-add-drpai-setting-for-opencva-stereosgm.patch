@@ -1,0 +1,789 @@
+diff --git old/modules/calib3d/include/opencv2/calib3d.hpp new/modules/calib3d/include/opencv2/calib3d.hpp
+index 7b15563..7668073 100644
+--- old/modules/calib3d/include/opencv2/calib3d.hpp
++++ new/modules/calib3d/include/opencv2/calib3d.hpp
+@@ -3433,7 +3433,8 @@ public:
+         MODE_SGBM = 0,
+         MODE_HH   = 1,
+         MODE_SGBM_3WAY = 2,
+-        MODE_HH4  = 3
++        MODE_HH4  = 3,
++        MODE_SGM_DRP  = 4
+     };
+ 
+     CV_WRAP virtual int getPreFilterCap() const = 0;
+diff --git old/modules/calib3d/src/stereosgbm.cpp new/modules/calib3d/src/stereosgbm.cpp
+index 75f6f32..88d33cf 100644
+--- old/modules/calib3d/src/stereosgbm.cpp
++++ new/modules/calib3d/src/stereosgbm.cpp
+@@ -55,6 +55,9 @@
+ #include "opencv2/core/hal/intrin.hpp"
+ #include "opencv2/core/utils/buffer_area.private.hpp"
+ 
++#include <rzv2ma_drp.h>
++#include <opencv2/core/utils/logger.hpp>
++
+ namespace cv
+ {
+ 
+@@ -467,6 +470,299 @@ public:
+     }
+ };
+ 
++/*****************************************
++* Method Name   : computeDisparitySGM_drp
++* Description   : stereoSGM
++* Arguments     : img1 = src1 image(Mat), img2 = src2 image(Mat),
++                  disp1 = disparity image(Mat), params = stereoSGBM params
++* Return value  : DRP_NORMAL_END if succeeded
++*                 DRP_PARAM_ERROR otherwise
++******************************************/
++static int computeDisparitySGM_drp( const Mat& img1, const Mat& img2,
++                                 Mat& disp1, const StereoSGBMParams& params )
++{
++    CV_LOG_INFO(nullptr, "stereoSGM_drp start.");
++
++    /* get single instance */
++    rzv2m_drp *drp = rzv2m_drp::get_instance();
++    if(NULL == drp)
++    {
++        CV_LOG_INFO(nullptr, "stereoSGM_drp get instance");
++        return DRP_NOT_EXECUTE;
++    }
++
++    int result = DRP_NORMAL_END;
++
++    /* get possible flag */
++    int stereoSGM_possiblef = drp->get_drp_possiblef(PARAM_NO_STEREOSGM);
++
++    /* active status only */
++    if(stereoSGM_possiblef != CIRCUIT_POSSIBLEF_ACTIVE)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* to set stereoSGM spec */
++    uint32_t src1_width = img1.size().width;
++    uint32_t src1_height = img1.size().height;
++    uint32_t src1_ch = img1.channels();
++    int src1_depth = img1.depth();
++
++    uint32_t src2_width = img2.size().width;
++    uint32_t src2_height = img2.size().height;
++    uint32_t src2_ch = img2.channels();
++    int src2_depth = img2.depth();
++
++    static const uint32_t img_max_width = 1920, img_max_height = 1080;
++    static const uint32_t img_min_width =   32, img_min_height =   32;
++
++    /* checking src image width size */
++    if (src1_width != src2_width)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++    if (0 != (src1_width % 4))
++    {
++        return DRP_NOT_EXECUTE;
++    }
++    if (img_min_width > src1_width)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++    if (img_max_width < src1_width)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* checking src image height size */
++    if (src1_height != src2_height)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    if (img_min_height > src1_height)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++    if (img_max_height < src1_height)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* checking channel size */
++    if (src1_ch != src2_ch)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++    if (1 != src1_ch)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* Check depth */
++    if(src1_depth != src2_depth)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++    if(CV_8U != src1_depth)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++    
++    /* dst src size */
++    uint32_t dst_width = disp1.size().width;
++    uint32_t dst_height = disp1.size().height;
++    uint32_t dst_ch = disp1.channels();
++    int dst_depth = disp1.depth();
++
++    /* input, output image buffer */
++    uint8_t *in1_image_buffer;
++    uint8_t *in2_image_buffer;
++    uint8_t *out_image_buffer;
++
++    /* checking dst image width size */
++    if (src1_width != dst_width)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++    if (src1_height != dst_height)
++    {
++        return DRP_NOT_EXECUTE;
++    }	
++    if (src1_ch != dst_ch)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++    if(CV_16S != dst_depth)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* Check params */
++    uint16_t minD  = params.minDisparity;
++    uint16_t maxD  = minD + params.numDisparities;
++    uint16_t dep   = maxD;
++    uint16_t p1    = params.P1 > 0 ? params.P1 : 2;
++    uint16_t p2    = params.P2 > 0 ? params.P2 : 5;
++    uint16_t win_x = params.calcSADWindowSize().width;
++    uint16_t win_y = params.calcSADWindowSize().height;
++    uint16_t uniquenessRatio = params.uniquenessRatio >= 0 ? params.uniquenessRatio : 10;
++
++    if (0 != minD)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++    if (0 != (maxD % 16))
++    {
++        return DRP_NOT_EXECUTE;
++    }
++    if (16 > maxD)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++    if (1280 < src1_width)
++    {
++        if (128 < maxD)
++        {
++            return DRP_NOT_EXECUTE;
++        }
++    } else {
++        if (256 < maxD)
++        {
++            return DRP_NOT_EXECUTE;
++        }
++    }
++
++    if(win_x != win_y)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++    if ((3 != win_x) && (5 != win_x) && (7 != win_x) && (9 != win_x)  && (11 != win_x)) // win_y = (11 == win_y) ? 9 : win_y; in DRP
++    {
++        return DRP_NOT_EXECUTE;
++    }
++    
++    if (100 < uniquenessRatio)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    if (p1 >= p2)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    if (640 >= src1_width)
++    {
++        if ((80 < p1) || (80 < p2))
++        {
++            return DRP_NOT_EXECUTE;
++        }
++    } else if (1280 >= src1_width) {
++        if ((50 < p1) || (50 < p2))
++        {
++            return DRP_NOT_EXECUTE;
++        }
++    } else {
++        if ((30 < p1) || (30 < p2))
++        {
++            return DRP_NOT_EXECUTE;
++        }
++    }
++
++    /* set in process to driver */
++    if(drp->set_drp_start() == DRP_CONFLICT_ERROR)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* reading opencva binary header info */
++    result = drp->readBinaryHeader();
++    if(DRP_NORMAL_END != result)
++    {
++        CV_LOG_INFO(nullptr, "stereoSGM_drp read header error.");
++        drp->set_drp_end();
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* to set stereoSGM parameter */
++    result = drp->setStereoSGMParameter(src1_width, src1_height, src1_ch, dst_width, dst_height, dst_ch,
++                                        dep, win_x, win_y, uniquenessRatio, p1, p2);
++    if(DRP_NORMAL_END != result)
++    {
++        drp->set_drp_end();
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* input image buffer */
++    in1_image_buffer = new uint8_t[src1_width*src1_height*src1_ch];
++    in2_image_buffer = new uint8_t[src2_width*src2_height*src2_ch];
++
++    Mat img1c =  Mat(src1_height, src1_width, CV_8UC(src1_ch), in1_image_buffer);
++    Mat img2c =  Mat(src2_height, src2_width, CV_8UC(src2_ch), in2_image_buffer);
++
++    /* continuous */
++    img1c = img1.clone();
++    img2c = img2.clone();
++
++    /* to set stereoSGM src image to drp input area */
++    result = drp->setSrcImage(img1c.data);
++    if(DRP_NORMAL_END != result)
++    {
++        delete[] in1_image_buffer;
++        delete[] in2_image_buffer;
++        drp->set_drp_end();
++        return DRP_NOT_EXECUTE;
++    }
++
++    result = drp->setSrc2Image(img2c.data);
++    if(DRP_NORMAL_END != result)
++    {
++        delete[] in1_image_buffer;
++        delete[] in2_image_buffer;
++        drp->set_drp_end();
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* executing drp process */
++    result = drp->execDRP_stereo();
++    if(DRP_NORMAL_END != result)
++    {
++        delete[] in1_image_buffer;
++        delete[] in2_image_buffer;
++        drp->set_drp_end();
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* output image buffer */
++    out_image_buffer = new uint8_t[dst_width*dst_height*dst_ch];
++
++    /* to read stereoSGM dst image from drp output area */
++    result = drp->readDstImage(out_image_buffer);
++    if(DRP_NORMAL_END != result)
++    {
++        delete[] in1_image_buffer;
++        delete[] in2_image_buffer;
++        delete[] out_image_buffer;
++        drp->set_drp_end();
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* to convert mat object */
++    Mat dst_mat_out =  Mat(dst_height, dst_width, CV_8UC(dst_ch), out_image_buffer);
++    dst_mat_out.convertTo(disp1, CV_16S);
++
++    delete[] in1_image_buffer;
++    delete[] in2_image_buffer;
++    delete[] out_image_buffer;
++
++    drp->set_drp_end();
++
++    CV_LOG_INFO(nullptr, "stereoSGM_drp end.");
++
++    return DRP_NORMAL_END;
++}
++
+ /*
+  computes disparity for "roi" in img1 w.r.t. img2 and write it to disp1buf.
+  that is, disp1buf(x, y)=d means that img1(x+roi.x, y+roi.y) ~ img2(x+roi.x-d, y+roi.y).
+@@ -2205,6 +2501,7 @@ public:
+     void compute( InputArray leftarr, InputArray rightarr, OutputArray disparr ) CV_OVERRIDE
+     {
+         CV_INSTRUMENT_REGION();
++        int result = DRP_NORMAL_END;
+ 
+         Mat left = leftarr.getMat(), right = rightarr.getMat();
+         CV_Assert( left.size() == right.size() && left.type() == right.type() &&
+@@ -2219,14 +2516,27 @@ public:
+             computeDisparity3WaySGBM<4>( left, right, disp, params );
+         else if(params.mode==MODE_HH4)
+             computeDisparitySGBM_HH4( left, right, disp, params );
++        else if(params.mode==MODE_SGM_DRP) {
++            result = computeDisparitySGM_drp( left, right, disp, params ); /* Call drp process */
++            if(DRP_NORMAL_END != result)
++            {
++	        disp.release();
++    	    }	    
++    	}
+         else
+             computeDisparitySGBM( left, right, disp, params );
+ 
+-        medianBlur(disp, disp, 3);
+-
+-        if( params.speckleWindowSize > 0 )
+-            filterSpeckles(disp, (params.minDisparity - 1)*StereoMatcher::DISP_SCALE, params.speckleWindowSize,
++	if(DRP_NORMAL_END != result)
++	{
++	    CV_Error(cv::Error::OpenCVADRPParameterError, "OpenCVA DRP parameter error, DRP not execute");
++ 
++	} else {
++            medianBlur(disp, disp, 3);
++    
++            if( params.speckleWindowSize > 0 )
++                filterSpeckles(disp, (params.minDisparity - 1)*StereoMatcher::DISP_SCALE, params.speckleWindowSize,
+                            StereoMatcher::DISP_SCALE*params.speckleRange, buffer);
++	}
+     }
+ 
+     int getMinDisparity() const CV_OVERRIDE { return params.minDisparity; }
+diff --git old/modules/core/include/opencv2/core/base.hpp new/modules/core/include/opencv2/core/base.hpp
+index f9b03c9..e78b037 100644
+--- old/modules/core/include/opencv2/core/base.hpp
++++ new/modules/core/include/opencv2/core/base.hpp
+@@ -122,6 +122,7 @@ enum Code {
+     OpenCLInitError=           -222, //!< OpenCL initialization error
+     OpenCLNoAMDBlasFft=        -223,
+     OpenCVADRPConflict=        -501, //!< OpenCVA DRP conflict error
++    OpenCVADRPParameterError=  -502, //!< OpenCVA DRP parameter error
+     };
+ } //Error
+ 
+diff --git old/modules/imgproc/include/opencv2/imgproc.hpp new/modules/imgproc/include/opencv2/imgproc.hpp
+index f7f6702..d98c054 100644
+--- old/modules/imgproc/include/opencv2/imgproc.hpp
++++ new/modules/imgproc/include/opencv2/imgproc.hpp
+@@ -5131,7 +5131,8 @@ Point LineIterator::pos() const
+ #define OCA_FUNC_PERSPECTIVE    (14)
+ #define OCA_FUNC_FAST           (15)
+ #define OCA_FUNC_REMAP          (16)
+-#define OCA_LIST_NUM            (17)
++#define OCA_FUNC_STEREOSGM      (17)
++#define OCA_LIST_NUM            (18)
+ 
+ /* opencva activate api */
+ CV_EXPORTS_W int OCA_Activate(unsigned long* OCA_list);
+diff --git old/modules/imgproc/include/rzv2ma_drp.h new/modules/imgproc/include/rzv2ma_drp.h
+index 0fa9f81..62311c7 100644
+--- old/modules/imgproc/include/rzv2ma_drp.h
++++ new/modules/imgproc/include/rzv2ma_drp.h
+@@ -119,6 +119,9 @@ const static int DRP_CONFLICT_ERROR = -5;
+ #define PARAM_NO_REMAP (16)   // circuit No of remap
+ #define PARAM_SIZE_REMAP (56) // param size of remap
+ 
++#define PARAM_NO_STEREOSGM (17)   // circuit No of stereosgm
++#define PARAM_SIZE_STEREOSGM (64) // param size of stereosgm
++
+ /* OCA Circuit activate*/
+ /* input param */
+ #define CIRCUIT_INPARAM_INACTIVATE (0)
+@@ -213,14 +216,23 @@ public:
+     int setRemapParameter(uint16_t src_width, uint16_t src_height, uint16_t src_ch,
+                 uint16_t dst_width, uint16_t dst_height, uint32_t border_color);
+ 
++    int setStereoSGMParameter(uint16_t src_width, uint16_t src_height, uint16_t src_ch,
++				uint16_t dst_width, uint16_t dst_height, uint16_t dst_ch,
++				uint16_t dep, uint16_t win_x, uint16_t win_y,
++				uint16_t uniquenessRatio, uint16_t p1, uint16_t p2);
++
+     int setSrcImage(uint8_t *srcImgData);
+ 
++    int setSrc2Image(uint8_t *srcImgData);
++
+     int setMatchTempl(uint8_t *templData);
+ 
+     int setMapData(uint8_t *mapData);
+ 
+     int execDRP(void);
+ 
++    int execDRP_stereo(void);
++
+     int readDstImage(uint8_t *dstImgData);
+ 
+     int readCornerPoints(std::vector<cv::KeyPoint> &keypoints);
+@@ -245,8 +257,10 @@ private:
+ 
+     void map_adr_64aligment(void);
+ 
++    void work_adr_64aligment(void);
++
+     uint64_t opencv_bin_addr64_phy;     // physical memory area address (64bit)
+-    
++
+     uint8_t opencv_bin_p[OCA_BIN_SIZE];      // opencva binary area(3.6M Byte = 400*1024*9 Byte)
+ 
+     bool initialized = false;           
+@@ -271,15 +285,19 @@ private:
+     uint32_t drp_size;                  // circuit data size
+ 
+     uint64_t src_adr;   // physical address of src
++    uint64_t src2_adr;  // physical address of src2
+     uint64_t dst_adr;   // physical address of dst
+     uint64_t tmpl_adr;  // physical address of match template
+     uint64_t corner_adr;// physical address of detected corners
+     uint64_t map_adr;   // physical address of map
++    uint64_t work_adr;  // physical address of work area
+ 
+     uint32_t src_size;
++    uint32_t src2_size;
+     uint32_t dst_size;
+     uint32_t tmpl_size;
+     uint32_t map_size;
++    uint32_t work_size;
+     
+     drp_data_t proc[DRP_SEQ_NUM * 2];
+ 
+diff --git old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma_drp.cpp
+index 4c3ad74..a8c1722 100644
+--- old/modules/imgproc/src/rzv2ma_drp.cpp
++++ new/modules/imgproc/src/rzv2ma_drp.cpp
+@@ -1733,6 +1733,107 @@ int rzv2m_drp::setRemapParameter(uint16_t src_width, uint16_t src_height, uint16
+     return DRP_NORMAL_END;
+ }
+ 
++int rzv2m_drp::setStereoSGMParameter(uint16_t src_width, uint16_t src_height, uint16_t src_ch,
++                                     uint16_t dst_width, uint16_t dst_height, uint16_t dst_ch,
++                                     uint16_t dep, uint16_t win_x, uint16_t win_y,
++                                     uint16_t uniquenessRatio, uint16_t p1, uint16_t p2)
++{
++    int ret = 0;
++    int circuit_no = PARAM_NO_STEREOSGM; // stereosgm circuit index
++    uint8_t drp_stereosgm_param[PARAM_SIZE_STEREOSGM]; 
++
++    src_size  = src_width * src_height * src_ch;
++    src2_size = src_width * src_height * src_ch;
++    dst_size  = dst_width * dst_height * dst_ch;
++    work_size = src_width * dep * 2 * 6;  // 2byte x 6 area
++	
++    possiblef     = *(uint32_t *)(&opencv_bin_p[opencv_bin_list_base + 32*circuit_no]);    // existence flag of circuit data 
++    drp_position  = *(uint32_t *)(&opencv_bin_p[opencv_bin_list_base + 32*circuit_no + 4]);// address at circuit data (offset value from CONFIG_BASE)
++    drp_size      = *(uint32_t *)(&opencv_bin_p[opencv_bin_list_base + 32*circuit_no + 8]);// size of stereosgm circuit
++
++    /*  calculate address value of input image and output image */
++    src_adr  = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next to DRP parameter area
++    src2_adr = src_adr  + src_size;
++    dst_adr  = src2_adr + src2_size;
++    tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
++    
++    dst_adr_64aligment();
++
++    work_adr = dst_adr  + dst_size;
++    work_adr_64aligment();
++                            
++    /* set stereosgm drp rapameter to local variables */
++    *((uint32_t *)(&drp_stereosgm_param[0]))  = src_adr;         //src  image address  (for 40bit addr, irrelevant to V2H)
++    *((uint32_t *)(&drp_stereosgm_param[4]))  = src2_adr;        //src2 image address  (for 40bit addr, irrelevant to V2H)
++    *((uint32_t *)(&drp_stereosgm_param[8]))  = dst_adr;         //dst image address   (for 40bit addr, irrelevant to V2H)
++    *((uint32_t *)(&drp_stereosgm_param[12])) = work_adr;        //work area address   (for 40bit addr, irrelevant to V2H)
++    *((uint16_t *)(&drp_stereosgm_param[16])) = src_width;       //input width(pixel)
++    *((uint16_t *)(&drp_stereosgm_param[18])) = src_height;      //input height(pixel)
++    *((uint16_t *)(&drp_stereosgm_param[20])) = src_ch;          //input channels
++    *((uint16_t *)(&drp_stereosgm_param[22])) = 0;               //reserved(0)
++    *((uint16_t *)(&drp_stereosgm_param[24])) = dst_width;       //output width(pixel)
++    *((uint16_t *)(&drp_stereosgm_param[26])) = dst_height;      //output width(pixel)
++    *((uint16_t *)(&drp_stereosgm_param[28])) = dst_ch;          //output channels
++    *((uint16_t *)(&drp_stereosgm_param[30])) = 0;               //reserved(0)
++    *((uint16_t *)(&drp_stereosgm_param[32])) = 0;               //reserved(0)
++    *((uint16_t *)(&drp_stereosgm_param[34])) = dep;             //disparity
++    *((uint16_t *)(&drp_stereosgm_param[36])) = win_x;           //census window x
++    *((uint16_t *)(&drp_stereosgm_param[38])) = win_y;           //census window y
++    *((uint16_t *)(&drp_stereosgm_param[40])) = uniquenessRatio; //uniquenessRatio
++    *((uint16_t *)(&drp_stereosgm_param[42])) = p1;              //penalty1
++    *((uint16_t *)(&drp_stereosgm_param[44])) = p2;              //penalty2
++    *((uint16_t *)(&drp_stereosgm_param[46])) = 0;               //reserved(0)
++    *((uint16_t *)(&drp_stereosgm_param[48])) = 0;               //reserved(0)
++    *((uint16_t *)(&drp_stereosgm_param[50])) = 0;               //reserved(0)
++    *((uint16_t *)(&drp_stereosgm_param[52])) = 0;               //reserved(0)
++    *((uint16_t *)(&drp_stereosgm_param[54])) = 0;               //reserved(0)
++    *((uint16_t *)(&drp_stereosgm_param[56])) = 0;               //reserved(0)
++    *((uint16_t *)(&drp_stereosgm_param[58])) = 0;               //reserved(0)
++    *((uint16_t *)(&drp_stereosgm_param[60])) = 1;               //reserved(1)
++    *((uint16_t *)(&drp_stereosgm_param[62])) = 0;               //reserved(0)
++
++    /* to write drp parameters to memory area */
++    proc[DRPPARAM1].address = opencv_bin_addr64_phy  + opencv_bin_param_base;   // pysical address 
++    proc[DRPPARAM1].size = PARAM_SIZE_STEREOSGM;// size of param (64 byte)
++                               
++    do
++    {
++        errno = 0;
++        ret = ioctl(fd_drp, DRP_ASSIGN, &proc[DRPPARAM1]);   // to assign to drp area
++    } while ((-1 == ret) && (ERESTART == errno));
++
++    if ((0 != ret) && (EACCES == errno))
++    {
++        conflict_action_exec();
++        return DRP_NOT_EXECUTE;
++    }
++
++    if (!((0 == ret) && (0 == errno)))
++    {
++        return DRP_PARAM_ERROR;
++    }
++
++    do
++    {
++        errno= 0;
++        ret = write(fd_drp, drp_stereosgm_param, PARAM_SIZE_STEREOSGM);  // to write parameter to specified address
++    } while ((-1 == ret) && (ERESTART == errno));
++        
++    if ((-1 == ret) && (EACCES == errno))
++    {
++        conflict_action_exec();
++        return DRP_NOT_EXECUTE;
++    }
++
++    if ( ret != PARAM_SIZE_STEREOSGM)
++    {
++        return DRP_PARAM_ERROR;
++    }
++
++    return DRP_NORMAL_END;
++}
++
+ /*****************************************
+ * Method Name   : setMapData
+ * Description   : to set map data to drp input area
+@@ -1836,6 +1937,58 @@ int rzv2m_drp::setSrcImage(uint8_t *img_buffer)
+     
+     return DRP_NORMAL_END;
+ }
++/*****************************************
++* Method Name   : setSrc2Image
++* Description   : to set src image to drp input area
++* Arguments     : img-_buffer = src image data area
++* Return value  : DRP_NORMAL_END if succeeded
++*                 DRP_SRC_IMAGE_ERROR otherwise
++******************************************/
++int rzv2m_drp::setSrc2Image(uint8_t *img_buffer)
++{
++    int ret = 0;
++
++    drp_data_t src_img;
++    src_img.address = src2_adr;          // physical memory address of input image area
++    src_img.size = src2_size;            // input image size
++    
++    do
++    {
++        errno = 0;
++        ret = ioctl(fd_drp, DRP_ASSIGN, &src_img);
++    } while ((-1 == ret) && (ERESTART == errno));
++        
++    if ((0 != ret) && (EACCES == errno))
++    {
++        conflict_action_exec();
++        return DRP_NOT_EXECUTE;
++    }
++
++    if (!((0 == ret) && (0 == errno)))
++    {
++        return DRP_SRC_IMAGE_ERROR;
++    }
++
++    do
++    {
++        errno= 0;
++        ret = write(fd_drp, img_buffer, src2_size);
++    } while ((-1 == ret) && (ERESTART == errno));
++
++    if ((-1 == ret) && (EACCES == errno))
++    {
++        conflict_action_exec();
++        return DRP_NOT_EXECUTE;
++    }
++
++    if ((uint32_t)ret != src2_size)
++    {
++        return DRP_SRC_IMAGE_ERROR;
++    }
++    
++    return DRP_NORMAL_END;
++}
++
+ 
+ /*****************************************
+ * Method Name   : execDRP
+@@ -1890,7 +2043,7 @@ int rzv2m_drp::execDRP(void)
+     }
+     
+ #endif
+-    
++
+     ret = ioctl(fd_drp, DRP_SET_SEQ, &seq);                                         // to set seq data
+ 
+     if ((0 != ret) && (EBUSY == errno))
+@@ -1957,6 +2110,113 @@ int rzv2m_drp::execDRP(void)
+     return DRP_NORMAL_END;
+ }
+ 
++/*****************************************
++* Method Name   : execDRP_stereo
++* Description   : executing drp process for stereoSGM
++* Arguments     : void
++* Return value  : DRP_NORMAL_END if succeeded
++*                 DRP_EXEC_ERROR otherwise
++******************************************/
++int rzv2m_drp::execDRP_stereo(void)
++{
++    int ret = 0;
++    drp_seq_t seq;
++  
++    /* to write drp parameters to memory area */
++    proc[DRPCFG1].address = opencv_bin_addr64_phy + opencv_bin_config_base + drp_position;  // pysical address
++    proc[DRPCFG1].size    = drp_size;  // size of stereosgm circuit
++
++    seq.num         = DRPCFG_NUM;
++    seq.iodata_num  = 4;               // stereosgm (src, src2, dst, work)
++
++#ifdef DEV_RZV2H   // for 40bit addr
++    seq.order[0]    = DRP_EXE_DRP_40BIT;
++#else
++    seq.order[0]    = DRP_EXE_DRP;
++#endif
++    seq.address     = opencv_bin_addr64_phy + opencv_bin_descriptor_base;           // descriptor base
++
++#ifdef DEV_RZV2H  // for 40bit addr
++    seq.iodata[0].address = src_adr;
++    seq.iodata[0].size    = src_size;
++    seq.iodata[0].pos     = 0;
++    seq.iodata[1].address = src2_adr;
++    seq.iodata[1].size    = src2_size;
++    seq.iodata[1].pos     = 4;
++    seq.iodata[2].address = dst_adr;
++    seq.iodata[2].size    = dst_size;
++    seq.iodata[2].pos     = 8;
++    seq.iodata[3].address = work_adr;
++    seq.iodata[3].size    = work_size;
++    seq.iodata[3].pos     = 12;
++#endif
++    
++    ret = ioctl(fd_drp, DRP_SET_SEQ, &seq);                                         // to set seq data
++
++    if ((0 != ret) && (EBUSY == errno))
++    {
++        conflict_action_exec();
++        return DRP_NOT_EXECUTE;
++    }
++
++    if (0 != ret || (0 != errno) )
++    {
++        return DRP_EXEC_ERROR;
++    }
++    
++    /* to start drp process */  
++    ret = ioctl(fd_drp, DRP_START, proc);
++
++    if ((0 != ret) && (EBUSY == errno))
++    {
++        conflict_action_exec();
++        return DRP_NOT_EXECUTE;
++    }
++
++    if (0 != ret || (0 != errno) )
++    {
++        return DRP_EXEC_ERROR;
++    }
++    
++    /* waiting finish */
++    
++    fd_set rfds;
++    FD_ZERO(&rfds);
++    FD_SET(fd_drp, &rfds);
++    struct timeval tv;
++    tv.tv_sec = DRP_EXEC_TIMEOUT_SECONDS;
++    tv.tv_usec = 0;
++
++    ret = select(fd_drp + 1, &rfds, NULL, NULL, &tv);
++
++    if (0 == ret)
++    {
++        return DRP_EXEC_ERROR;
++    }
++    else if (-1 == ret)
++    {
++        return DRP_EXEC_ERROR;
++    }
++
++    /* to check result */
++    
++    drp_status_t drp_status;
++    ret = ioctl(fd_drp, DRP_GET_STATUS, &drp_status);
++
++    if ((0 != ret) && (EACCES == errno))
++    {
++        conflict_action_exec();
++        return DRP_NOT_EXECUTE;
++    }
++
++    if (!(((0 == ret) || (EBUSY == errno)) && (0 == drp_status.err)))
++    {
++        return DRP_EXEC_ERROR;
++    }
++
++    return DRP_NORMAL_END;
++}
++
+ /*****************************************
+ * Method Name   : readTemplaeMatchResult
+ * Description   : to read dst image from drp output area
+@@ -2059,6 +2319,23 @@ void rzv2m_drp::map_adr_64aligment()
+     return;
+ }
+ 
++/*****************************************
++* Method Name   : work_adr_64aligment()
++* Description   : calc 64 bit aligment address
++* Arguments     : none
++* Return value  : void
++******************************************/
++void rzv2m_drp::work_adr_64aligment()
++{
++    /* 64bit aligment */
++    uint32_t align = 0;
++
++    align = 64 - (work_adr % 64);
++    work_adr = work_adr + align; 
++
++    return;
++}
++
+ /*****************************************
+ * Method Name   : readDstImage
+ * Description   : to read dst image from drp output area
+@@ -2662,4 +2939,4 @@ void rzv2m_drp::initialize(void)
+ rzv2m_drp::~rzv2m_drp()
+ {
+     close(fd_drp);
+-}
+\ No newline at end of file
++}

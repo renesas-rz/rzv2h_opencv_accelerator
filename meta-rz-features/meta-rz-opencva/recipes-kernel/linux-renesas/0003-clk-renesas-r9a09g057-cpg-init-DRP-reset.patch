@@ -1,0 +1,25 @@
+From e0dbf2fbb10297f7485cec6df914b84898af2d57 Mon Sep 17 00:00:00 2001
+From: Tai Huynh <tai.huynh.cp@renesas.com>
+Date: Fri, 19 Sep 2025 15:10:23 +0700
+Subject: [PATCH] clk: renesas: r9a09g057-cpg: init DRP reset
+
+Signed-off-by: Tai Huynh <tai.huynh.cp@renesas.com>
+---
+ drivers/clk/renesas/r9a09g057-cpg.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/clk/renesas/r9a09g057-cpg.c b/drivers/clk/renesas/r9a09g057-cpg.c
+index 5da1b627c1966..3786670ffb3fe 100644
+--- a/drivers/clk/renesas/r9a09g057-cpg.c
++++ b/drivers/clk/renesas/r9a09g057-cpg.c
+@@ -923,6 +923,7 @@ static const struct rzv2h_reset r9a09g057_resets[] __initconst = {
+ 	DEF_RST(15, 6, 7, 7),		/* ADC_ADRST_N */
+ 	DEF_RST(15, 7, 7, 8),		/* TSU0_PRESETN */
+ 	DEF_RST(15, 8, 7, 9),		/* TSU1_PRESETN */
++	DEF_RST(15, 12, 7, 13),		/* DRP0_ARESETN */
+ };
+ 
+ const struct rzv2h_cpg_info r9a09g057_cpg_info __initconst = {
+-- 
+2.34.1
+

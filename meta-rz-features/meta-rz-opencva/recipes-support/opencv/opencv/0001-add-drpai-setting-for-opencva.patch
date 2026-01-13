@@ -1,6 +1,7 @@
-diff -uprN old/modules/core/include/opencv2/core/base.hpp new/modules/core/include/opencv2/core/base.hpp
---- old/modules/core/include/opencv2/core/base.hpp	2019-04-08 02:09:10.000000000 +0900
-+++ new/modules/core/include/opencv2/core/base.hpp	2023-11-07 14:01:15.000000000 +0900
+diff --git a/modules/core/include/opencv2/core/base.hpp b/modules/core/include/opencv2/core/base.hpp
+index 21a61a4..f9b03c9 100644
+--- a/modules/core/include/opencv2/core/base.hpp
++++ b/modules/core/include/opencv2/core/base.hpp
 @@ -120,8 +120,9 @@ enum Code {
      OpenCLApiCallError=        -220, //!< OpenCL API call error
      OpenCLDoubleNotSupported=  -221,
@@ -13,291 +14,11 @@ diff -uprN old/modules/core/include/opencv2/core/base.hpp new/modules/core/inclu
  } //Error
  
  //! @} core_utils
-@@ -642,9 +643,6 @@ static inline void setUseIPP_NE(bool fla
- 
- //! @} core_utils
- 
--
--
--
- } // cv
- 
- #include "opencv2/core/neon_utils.hpp"
-diff -uprN old/modules/core/src/persistence_json.cpp new/modules/core/src/persistence_json.cpp
---- old/modules/core/src/persistence_json.cpp	2019-04-08 02:09:10.000000000 +0900
-+++ new/modules/core/src/persistence_json.cpp	2023-11-07 14:01:15.000000000 +0900
-@@ -296,8 +296,6 @@ public:
- 
-         while ( is_eof == false && is_completed == false )
-         {
--            if (!ptr)
--                CV_PARSE_ERROR_CPP("Invalid input");
-             switch ( *ptr )
-             {
-                 /* comment */
-@@ -383,7 +381,6 @@ public:
-         if ( is_eof || !is_completed )
-         {
-             ptr = fs->bufferStart();
--            CV_Assert(ptr);
-             *ptr = '\0';
-             fs->setEof();
-             if( !is_completed )
-@@ -395,9 +392,6 @@ public:
- 
-     char* parseKey( char* ptr, FileNode& collection, FileNode& value_placeholder )
-     {
--        if (!ptr)
--            CV_PARSE_ERROR_CPP("Invalid input");
--
-         if( *ptr != '"' )
-             CV_PARSE_ERROR_CPP( "Key must start with \'\"\'" );
- 
-@@ -436,9 +430,6 @@ public:
- 
-     char* parseValue( char* ptr, FileNode& node )
-     {
--        if (!ptr)
--            CV_PARSE_ERROR_CPP("Invalid value input");
--
-         ptr = skipSpaces( ptr );
-         if( !ptr || !*ptr )
-             CV_PARSE_ERROR_CPP( "Unexpected End-Of-File" );
-@@ -578,14 +569,10 @@ public:
-                             sz = (int)(ptr - beg);
-                             if( sz > 0 )
-                             {
--                                if (i + sz >= CV_FS_MAX_LEN)
--                                    CV_PARSE_ERROR_CPP("string is too long");
-                                 memcpy(buf + i, beg, sz);
-                                 i += sz;
-                             }
-                             ptr++;
--                            if (i + 1 >= CV_FS_MAX_LEN)
--                                CV_PARSE_ERROR_CPP("string is too long");
-                             switch ( *ptr )
-                             {
-                             case '\\':
-@@ -609,8 +596,6 @@ public:
-                             sz = (int)(ptr - beg);
-                             if( sz > 0 )
-                             {
--                                if (i + sz >= CV_FS_MAX_LEN)
--                                    CV_PARSE_ERROR_CPP("string is too long");
-                                 memcpy(buf + i, beg, sz);
-                                 i += sz;
-                             }
-@@ -626,8 +611,6 @@ public:
-                             sz = (int)(ptr - beg);
-                             if( sz > 0 )
-                             {
--                                if (i + sz >= CV_FS_MAX_LEN)
--                                    CV_PARSE_ERROR_CPP("string is too long");
-                                 memcpy(buf + i, beg, sz);
-                                 i += sz;
-                             }
-@@ -834,9 +817,6 @@ public:
- 
-     bool parse( char* ptr )
-     {
--        if (!ptr)
--            CV_PARSE_ERROR_CPP("Invalid input");
--
-         ptr = skipSpaces( ptr );
-         if ( !ptr || !*ptr )
-             return false;
-diff -uprN old/modules/core/src/persistence_xml.cpp new/modules/core/src/persistence_xml.cpp
---- old/modules/core/src/persistence_xml.cpp	2019-04-08 02:09:10.000000000 +0900
-+++ new/modules/core/src/persistence_xml.cpp	2023-11-07 14:01:15.000000000 +0900
-@@ -360,9 +360,6 @@ public:
- 
-     char* skipSpaces( char* ptr, int mode )
-     {
--        if (!ptr)
--            CV_PARSE_ERROR_CPP("Invalid input");
--
-         int level = 0;
- 
-         for(;;)
-@@ -444,9 +441,6 @@ public:
- 
-     char* parseValue( char* ptr, FileNode& node )
-     {
--        if (!ptr)
--            CV_PARSE_ERROR_CPP("Invalid input");
--
-         FileNode new_elem;
-         bool have_space = true;
-         int value_type = node.type();
-@@ -462,8 +456,6 @@ public:
-                 (c == '<' && ptr[1] == '!' && ptr[2] == '-') )
-             {
-                 ptr = skipSpaces( ptr, 0 );
--                if (!ptr)
--                    CV_PARSE_ERROR_CPP("Invalid input");
-                 have_space = true;
-                 c = *ptr;
-             }
-@@ -510,8 +502,6 @@ public:
-                 {
-                     ptr = fs->parseBase64( ptr, 0, new_elem);
-                     ptr = skipSpaces( ptr, 0 );
--                    if (!ptr)
--                        CV_PARSE_ERROR_CPP("Invalid input");
-                 }
- 
-                 ptr = parseTag( ptr, key2, type_name, tag_type );
-@@ -627,8 +617,6 @@ public:
-                                         c = '\"';
-                                     else
-                                     {
--                                        if (len + 2 + i >= CV_FS_MAX_LEN)
--                                            CV_PARSE_ERROR_CPP("string is too long");
-                                         memcpy( strbuf + i, ptr-1, len + 2 );
-                                         i += len + 2;
-                                     }
-@@ -637,9 +625,9 @@ public:
-                                 CV_PERSISTENCE_CHECK_END_OF_BUFFER_BUG_CPP();
-                             }
-                         }
--                        if (i + 1 >= CV_FS_MAX_LEN)
--                            CV_PARSE_ERROR_CPP("Too long string literal");
-                         strbuf[i++] = c;
-+                        if( i >= CV_FS_MAX_LEN )
-+                            CV_PARSE_ERROR_CPP( "Too long string literal" );
-                     }
-                     elem->setValue(FileNode::STRING, strbuf, i);
-                 }
-@@ -657,9 +645,6 @@ public:
-     char* parseTag( char* ptr, std::string& tag_name,
-                     std::string& type_name, int& tag_type )
-     {
--        if (!ptr)
--            CV_PARSE_ERROR_CPP("Invalid tag input");
--
-         if( *ptr == '\0' )
-             CV_PARSE_ERROR_CPP( "Unexpected end of the stream" );
- 
-@@ -717,8 +702,6 @@ public:
-                 if( *ptr != '=' )
-                 {
-                     ptr = skipSpaces( ptr, CV_XML_INSIDE_TAG );
--                    if (!ptr)
--                        CV_PARSE_ERROR_CPP("Invalid attribute");
-                     if( *ptr != '=' )
-                         CV_PARSE_ERROR_CPP( "Attribute name should be followed by \'=\'" );
-                 }
-@@ -757,8 +740,6 @@ public:
-             if( c != '>' )
-             {
-                 ptr = skipSpaces( ptr, CV_XML_INSIDE_TAG );
--                if (!ptr)
--                    CV_PARSE_ERROR_CPP("Invalid input");
-                 c = *ptr;
-             }
- 
-@@ -800,8 +781,6 @@ public:
- 
-         // CV_XML_INSIDE_TAG is used to prohibit leading comments
-         ptr = skipSpaces( ptr, CV_XML_INSIDE_TAG );
--        if (!ptr)
--            CV_PARSE_ERROR_CPP("Invalid input");
- 
-         if( memcmp( ptr, "<?xml", 5 ) != 0 )  // FIXIT ptr[1..] - out of bounds read without check
-             CV_PARSE_ERROR_CPP( "Valid XML should start with \'<?xml ...?>\'" );
-@@ -812,8 +791,6 @@ public:
-         while( ptr && *ptr != '\0' )
-         {
-             ptr = skipSpaces( ptr, 0 );
--            if (!ptr)
--                CV_PARSE_ERROR_CPP("Invalid input");
- 
-             if( *ptr != '\0' )
-             {
-diff -uprN old/modules/core/src/persistence_yml.cpp new/modules/core/src/persistence_yml.cpp
---- old/modules/core/src/persistence_yml.cpp	2019-04-08 02:09:10.000000000 +0900
-+++ new/modules/core/src/persistence_yml.cpp	2023-11-07 14:01:15.000000000 +0900
-@@ -330,9 +330,6 @@ public:
- 
-     char* skipSpaces( char* ptr, int min_indent, int max_comment_indent )
-     {
--        if (!ptr)
--            CV_PARSE_ERROR_CPP("Invalid input");
--
-         for(;;)
-         {
-             while( *ptr == ' ' )
-@@ -377,9 +374,6 @@ public:
- 
-     bool getBase64Row(char* ptr, int indent, char* &beg, char* &end)
-     {
--        if (!ptr)
--            CV_PARSE_ERROR_CPP("Invalid input");
--
-         beg = end = ptr = skipSpaces(ptr, 0, INT_MAX);
-         if (!ptr || !*ptr)
-             return false; // end of file
-@@ -400,9 +394,6 @@ public:
- 
-     char* parseKey( char* ptr, FileNode& map_node, FileNode& value_placeholder )
-     {
--        if (!ptr)
--            CV_PARSE_ERROR_CPP("Invalid input");
--
-         char c;
-         char *endptr = ptr - 1, *saveptr;
- 
-@@ -431,9 +422,6 @@ public:
- 
-     char* parseValue( char* ptr, FileNode& node, int min_indent, bool is_parent_flow )
-     {
--        if (!ptr)
--            CV_PARSE_ERROR_CPP("Invalid input");
--
-         char* endptr = 0;
-         char c = ptr[0], d = ptr[1];
-         int value_type = FileNode::NONE;
-@@ -520,8 +508,6 @@ public:
- 
-             *endptr = d;
-             ptr = skipSpaces( endptr, min_indent, INT_MAX );
--            if (!ptr)
--                CV_PARSE_ERROR_CPP("Invalid input");
- 
-             c = *ptr;
- 
-@@ -648,8 +634,6 @@ public:
-                 FileNode elem;
- 
-                 ptr = skipSpaces( ptr, new_min_indent, INT_MAX );
--                if (!ptr)
--                    CV_PARSE_ERROR_CPP("Invalid input");
-                 if( *ptr == '}' || *ptr == ']' )
-                 {
-                     if( *ptr != d )
-@@ -663,8 +647,6 @@ public:
-                     if( *ptr != ',' )
-                         CV_PARSE_ERROR_CPP( "Missing , between the elements" );
-                     ptr = skipSpaces( ptr + 1, new_min_indent, INT_MAX );
--                    if (!ptr)
--                        CV_PARSE_ERROR_CPP("Invalid input");
-                 }
- 
-                 if( struct_type == FileNode::MAP )
-@@ -764,9 +746,6 @@ public:
- 
-     bool parse( char* ptr )
-     {
--        if (!ptr)
--            CV_PARSE_ERROR_CPP("Invalid input");
--
-         bool first = true;
-         bool ok = true;
-         FileNode root_collection(fs->getFS(), 0, 0);
-diff -uprN old/modules/features2d/src/fast.cpp new/modules/features2d/src/fast.cpp
---- old/modules/features2d/src/fast.cpp	2019-04-08 02:09:10.000000000 +0900
-+++ new/modules/features2d/src/fast.cpp	2023-11-07 14:01:15.000000000 +0900
-@@ -50,6 +50,10 @@ The references are:
+diff --git a/modules/features2d/src/fast.cpp b/modules/features2d/src/fast.cpp
+index cb088eb..f76f795 100644
+--- a/modules/features2d/src/fast.cpp
++++ b/modules/features2d/src/fast.cpp
+@@ -51,6 +51,10 @@ The references are:
  
  #include "opencv2/core/openvx/ovx_defs.hpp"
  
@@ -308,7 +29,7 @@ diff -uprN old/modules/features2d/src/fast.cpp new/modules/features2d/src/fast.c
  namespace cv
  {
  
-@@ -472,6 +476,155 @@ static inline int hal_FAST(cv::Mat& src,
+@@ -493,6 +497,154 @@ static inline int hal_FAST(cv::Mat& src, std::vector<KeyPoint>& keypoints, int t
      return CV_HAL_ERROR_OK;
  }
  
@@ -444,9 +165,8 @@ diff -uprN old/modules/features2d/src/fast.cpp new/modules/features2d/src/fast.c
 +        drp->set_drp_end();
 +        return DRP_NOT_EXECUTE;
 +    }
-+  
++
 +    result = drp->readCornerPoints(keypoints);
-+    
 +
 +    if(DRP_NORMAL_END != result)
 +    {
@@ -464,7 +184,7 @@ diff -uprN old/modules/features2d/src/fast.cpp new/modules/features2d/src/fast.c
  void FAST(InputArray _img, std::vector<KeyPoint>& keypoints, int threshold, bool nonmax_suppression, FastFeatureDetector::DetectorType type)
  {
      CV_INSTRUMENT_REGION();
-@@ -479,6 +632,16 @@ void FAST(InputArray _img, std::vector<K
+@@ -500,6 +652,16 @@ void FAST(InputArray _img, std::vector<KeyPoint>& keypoints, int threshold, bool
      CV_OCL_RUN(_img.isUMat() && type == FastFeatureDetector::TYPE_9_16,
                 ocl_FAST(_img, keypoints, threshold, nonmax_suppression, 10000));
  
@@ -477,13 +197,15 @@ diff -uprN old/modules/features2d/src/fast.cpp new/modules/features2d/src/fast.c
 +        return;
 +    }
 +
-+    /* If could not execute drp process, then to call normal opencv method */    
++    /* If could not execute drp process, then to call normal opencv method */
      cv::Mat img = _img.getMat();
      CALL_HAL(fast_dense, hal_FAST, img, keypoints, threshold, nonmax_suppression, type);
  
-diff -uprN old/modules/imgproc/include/drpopencva.h new/modules/imgproc/include/drpopencva.h
---- old/modules/imgproc/include/drpopencva.h	1970-01-01 09:00:00.000000000 +0900
-+++ new/modules/imgproc/include/drpopencva.h	2023-11-07 14:01:15.000000000 +0900
+diff --git b/modules/imgproc/include/drpopencva.h b/modules/imgproc/include/drpopencva.h
+new file mode 100644
+index 0000000..c421241
+--- /dev/null
++++ b/modules/imgproc/include/drpopencva.h
 @@ -0,0 +1,87 @@
 +/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 +/*
@@ -572,10 +294,11 @@ diff -uprN old/modules/imgproc/include/drpopencva.h new/modules/imgproc/include/
 +#endif
 +
 +#endif /* _UAPI__DRP_H */
-diff -uprN old/modules/imgproc/include/opencv2/imgproc.hpp new/modules/imgproc/include/opencv2/imgproc.hpp
---- old/modules/imgproc/include/opencv2/imgproc.hpp	2019-04-08 02:09:10.000000000 +0900
-+++ new/modules/imgproc/include/opencv2/imgproc.hpp	2023-11-07 14:01:15.000000000 +0900
-@@ -671,8 +671,8 @@ enum ColorConversionCodes {
+diff --git a/modules/imgproc/include/opencv2/imgproc.hpp b/modules/imgproc/include/opencv2/imgproc.hpp
+index c95f1ad..1991699 100644
+--- a/modules/imgproc/include/opencv2/imgproc.hpp
++++ b/modules/imgproc/include/opencv2/imgproc.hpp
+@@ -686,8 +686,8 @@ enum ColorConversionCodes {
      //! YUV 4:2:2 family to RGB
      COLOR_YUV2RGB_UYVY = 107,
      COLOR_YUV2BGR_UYVY = 108,
@@ -586,7 +309,7 @@ diff -uprN old/modules/imgproc/include/opencv2/imgproc.hpp new/modules/imgproc/i
      COLOR_YUV2RGB_Y422 = COLOR_YUV2RGB_UYVY,
      COLOR_YUV2BGR_Y422 = COLOR_YUV2BGR_UYVY,
      COLOR_YUV2RGB_UYNV = COLOR_YUV2RGB_UYVY,
-@@ -680,8 +680,8 @@ enum ColorConversionCodes {
+@@ -695,8 +695,8 @@ enum ColorConversionCodes {
  
      COLOR_YUV2RGBA_UYVY = 111,
      COLOR_YUV2BGRA_UYVY = 112,
@@ -597,20 +320,12 @@ diff -uprN old/modules/imgproc/include/opencv2/imgproc.hpp new/modules/imgproc/i
      COLOR_YUV2RGBA_Y422 = COLOR_YUV2RGBA_UYVY,
      COLOR_YUV2BGRA_Y422 = COLOR_YUV2BGRA_UYVY,
      COLOR_YUV2RGBA_UYNV = COLOR_YUV2RGBA_UYVY,
-@@ -707,7 +707,6 @@ enum ColorConversionCodes {
+@@ -876,7 +876,17 @@ enum ColorConversionCodes {
+     COLOR_RGBA2YUV_YUNV = COLOR_RGBA2YUV_YUY2,
+     COLOR_BGRA2YUV_YUNV = COLOR_BGRA2YUV_YUY2,
  
-     COLOR_YUV2GRAY_UYVY = 123,
-     COLOR_YUV2GRAY_YUY2 = 124,
--    //CV_YUV2GRAY_VYUY    = CV_YUV2GRAY_UYVY,
-     COLOR_YUV2GRAY_Y422 = COLOR_YUV2GRAY_UYVY,
-     COLOR_YUV2GRAY_UYNV = COLOR_YUV2GRAY_UYVY,
-     COLOR_YUV2GRAY_YVYU = COLOR_YUV2GRAY_YUY2,
-@@ -782,7 +781,17 @@ enum ColorConversionCodes {
-     COLOR_BayerRG2RGBA = COLOR_BayerBG2BGRA,
-     COLOR_BayerGR2RGBA = COLOR_BayerGB2BGRA,
- 
--    COLOR_COLORCVT_MAX  = 143
-+    COLOR_COLORCVT_MAX  = 143,
+-    COLOR_COLORCVT_MAX  = 155
++    COLOR_COLORCVT_MAX  = 155,
 +
 +    /* opencva drp yuv -> nv */
 +    COLOR_YUV_NV12_YUY2 = 0x10000,
@@ -624,7 +339,7 @@ diff -uprN old/modules/imgproc/include/opencv2/imgproc.hpp new/modules/imgproc/i
  };
  
  //! @addtogroup imgproc_shape
-@@ -1452,6 +1461,8 @@ CV_EXPORTS_W void GaussianBlur( InputArr
+@@ -1548,6 +1558,8 @@ CV_EXPORTS_W void GaussianBlur( InputArray src, OutputArray dst, Size ksize,
                                  double sigmaX, double sigmaY = 0,
                                  int borderType = BORDER_DEFAULT );
  
@@ -633,7 +348,7 @@ diff -uprN old/modules/imgproc/include/opencv2/imgproc.hpp new/modules/imgproc/i
  /** @brief Applies the bilateral filter to an image.
  
  The function applies bilateral filtering to the input image, as described in
-@@ -1592,6 +1603,10 @@ CV_EXPORTS_W void filter2D( InputArray s
+@@ -1705,6 +1717,10 @@ CV_EXPORTS_W void filter2D( InputArray src, OutputArray dst, int ddepth,
                              InputArray kernel, Point anchor = Point(-1,-1),
                              double delta = 0, int borderType = BORDER_DEFAULT );
  
@@ -644,7 +359,7 @@ diff -uprN old/modules/imgproc/include/opencv2/imgproc.hpp new/modules/imgproc/i
  /** @brief Applies a separable linear filter to an image.
  
  The function applies a separable linear filter to the image. That is, first, every row of src is
-@@ -1667,6 +1682,11 @@ CV_EXPORTS_W void Sobel( InputArray src,
+@@ -1780,6 +1796,11 @@ CV_EXPORTS_W void Sobel( InputArray src, OutputArray dst, int ddepth,
                           double scale = 1, double delta = 0,
                           int borderType = BORDER_DEFAULT );
  
@@ -652,21 +367,21 @@ diff -uprN old/modules/imgproc/include/opencv2/imgproc.hpp new/modules/imgproc/i
 +                         int dx, int dy, int ksize = 3,
 +                         double scale = 1, double delta = 0,
 +                         int borderType = BORDER_DEFAULT );
-+                         
++
  /** @brief Calculates the first order image derivative in both x and y using a Sobel operator
  
  Equivalent to calling:
-@@ -2266,6 +2286,9 @@ CV_EXPORTS_W void resize( InputArray src
+@@ -2423,6 +2444,9 @@ CV_EXPORTS_W void resize( InputArray src, OutputArray dst,
                            Size dsize, double fx = 0, double fy = 0,
                            int interpolation = INTER_LINEAR );
  
-+CV_EXPORTS_W int resize_drp(InputArray _src, OutputArray _dst, Size dsize, double inv_scale_x, 
++CV_EXPORTS_W int resize_drp(InputArray _src, OutputArray _dst, Size dsize, double inv_scale_x,
 +                          double inv_scale_y, int interpolation);
 +
  /** @brief Applies an affine transformation to an image.
  
  The function warpAffine transforms the source image using the specified matrix:
-@@ -2296,6 +2319,12 @@ CV_EXPORTS_W void warpAffine( InputArray
+@@ -2453,6 +2477,12 @@ CV_EXPORTS_W void warpAffine( InputArray src, OutputArray dst,
                                int borderMode = BORDER_CONSTANT,
                                const Scalar& borderValue = Scalar());
  
@@ -677,9 +392,9 @@ diff -uprN old/modules/imgproc/include/opencv2/imgproc.hpp new/modules/imgproc/i
 +                              const Scalar& borderValue = Scalar());
 +
  /** @example samples/cpp/warpPerspective_demo.cpp
- An example program shows using cv::findHomography and cv::warpPerspective for image warping
+ An example program shows using cv::getPerspectiveTransform and cv::warpPerspective for image warping
  */
-@@ -2328,6 +2357,12 @@ CV_EXPORTS_W void warpPerspective( Input
+@@ -2485,6 +2515,12 @@ CV_EXPORTS_W void warpPerspective( InputArray src, OutputArray dst,
                                     int borderMode = BORDER_CONSTANT,
                                     const Scalar& borderValue = Scalar());
  
@@ -687,23 +402,35 @@ diff -uprN old/modules/imgproc/include/opencv2/imgproc.hpp new/modules/imgproc/i
 +                                   InputArray M, Size dsize,
 +                                   int flags = INTER_LINEAR,
 +                                   int borderMode = BORDER_CONSTANT,
-+                                   const Scalar& borderValue = Scalar());                                   
++                                   const Scalar& borderValue = Scalar());
 +
  /** @brief Applies a generic geometrical transformation to an image.
  
  The function remap transforms the source image using the specified map:
-@@ -2927,6 +2962,10 @@ CV_EXPORTS_W void adaptiveThreshold( Inp
+@@ -2522,6 +2558,11 @@ CV_EXPORTS_W void remap( InputArray src, OutputArray dst,
+                          int interpolation, int borderMode = BORDER_CONSTANT,
+                          const Scalar& borderValue = Scalar());
+ 
++CV_EXPORTS_W int remap_drp( InputArray src, OutputArray dst,
++                         InputArray map1, InputArray map2,
++                         int interpolation, int borderMode = BORDER_CONSTANT,
++                         const Scalar& borderValue = Scalar());
++
+ /** @brief Converts image transformation maps from one representation to another.
+ 
+ The function converts a pair of maps for remap from one representation to another. The following
+@@ -3109,6 +3150,10 @@ CV_EXPORTS_W void adaptiveThreshold( InputArray src, OutputArray dst,
                                       double maxValue, int adaptiveMethod,
                                       int thresholdType, int blockSize, double C );
  
 + CV_EXPORTS_W int adaptiveThreshold_drp( InputArray src, OutputArray dst,
 +                                     double maxValue, int adaptiveMethod,
-+                                     int thresholdType, int blockSize, double C );                                    
++                                     int thresholdType, int blockSize, double C );
 +
  //! @} imgproc_misc
  
  //! @addtogroup imgproc_filter
-@@ -2958,6 +2997,9 @@ Then, it downsamples the image by reject
+@@ -3140,6 +3185,9 @@ Then, it downsamples the image by rejecting even rows and columns.
  CV_EXPORTS_W void pyrDown( InputArray src, OutputArray dst,
                             const Size& dstsize = Size(), int borderType = BORDER_DEFAULT );
  
@@ -713,7 +440,7 @@ diff -uprN old/modules/imgproc/include/opencv2/imgproc.hpp new/modules/imgproc/i
  /** @brief Upsamples an image and then blurs it.
  
  By default, size of the output image is computed as `Size(src.cols\*2, (src.rows\*2)`, but in any
-@@ -2978,6 +3020,9 @@ pyrDown multiplied by 4.
+@@ -3160,6 +3208,9 @@ pyrDown multiplied by 4.
  CV_EXPORTS_W void pyrUp( InputArray src, OutputArray dst,
                           const Size& dstsize = Size(), int borderType = BORDER_DEFAULT );
  
@@ -723,18 +450,17 @@ diff -uprN old/modules/imgproc/include/opencv2/imgproc.hpp new/modules/imgproc/i
  /** @brief Constructs the Gaussian pyramid for an image.
  
  The function constructs a vector of images and builds the Gaussian pyramid by recursively applying
-@@ -3678,6 +3723,10 @@ CV_EXPORTS_W void matchTemplate( InputAr
- 
- //! @}
+@@ -3908,6 +3959,9 @@ is \f$W \times H\f$ and templ is \f$w \times h\f$ , then result is \f$(W-w+1) \t
+ CV_EXPORTS_W void matchTemplate( InputArray image, InputArray templ,
+                                  OutputArray result, int method, InputArray mask = noArray() );
  
 +CV_EXPORTS_W int matchTemplate_drp( InputArray image, InputArray templ,
 +                                 OutputArray result, int method, InputArray mask = noArray() );
 +
-+
- //! @addtogroup imgproc_shape
- //! @{
+ //! @}
  
-@@ -4755,4 +4804,10 @@ Point LineIterator::pos() const
+ //! @addtogroup imgproc_shape
+@@ -5062,6 +5116,11 @@ Point LineIterator::pos() const
  
  } // cv
  
@@ -743,12 +469,15 @@ diff -uprN old/modules/imgproc/include/opencv2/imgproc.hpp new/modules/imgproc/i
 +
 +/* opencva conflict action setting api */
 +CV_EXPORTS_W void OCA_ConflictNotification(int oca_conflict);
-+
- #endif
-diff -uprN old/modules/imgproc/include/rzv2ma_drp.h new/modules/imgproc/include/rzv2ma_drp.h
---- old/modules/imgproc/include/rzv2ma_drp.h	1970-01-01 09:00:00.000000000 +0900
-+++ new/modules/imgproc/include/rzv2ma_drp.h	2024-01-24 20:50:59.000000000 +0900
-@@ -0,0 +1,278 @@
+ 
+ #include "./imgproc/segmentation.hpp"
+ 
+diff --git b/modules/imgproc/include/rzv2ma_drp.h b/modules/imgproc/include/rzv2ma_drp.h
+new file mode 100644
+index 0000000..0fa9f81
+--- /dev/null
++++ b/modules/imgproc/include/rzv2ma_drp.h
+@@ -0,0 +1,290 @@
 +/***********************************************************************************************************************
 +* DISCLAIMER
 +* This software is supplied by Renesas Electronics Corporation and is only intended for use with Renesas products. No
@@ -867,6 +596,9 @@ diff -uprN old/modules/imgproc/include/rzv2ma_drp.h new/modules/imgproc/include/
 +#define PARAM_NO_FAST (15)   // circuit No of fast
 +#define PARAM_SIZE_FAST (56) // param size of fast
 +
++#define PARAM_NO_REMAP (16)   // circuit No of remap
++#define PARAM_SIZE_REMAP (56) // param size of remap
++
 +/* OCA Circuit activate*/
 +/* input param */
 +#define CIRCUIT_INPARAM_INACTIVATE (0)
@@ -958,9 +690,14 @@ diff -uprN old/modules/imgproc/include/rzv2ma_drp.h new/modules/imgproc/include/
 +
 +    int setFastParameter(uint16_t src_width, uint16_t src_height, uint16_t src_ch, uint16_t threshold);
 +
++    int setRemapParameter(uint16_t src_width, uint16_t src_height, uint16_t src_ch,
++                uint16_t dst_width, uint16_t dst_height, uint32_t border_color);
++
 +    int setSrcImage(uint8_t *srcImgData);
 +
 +    int setMatchTempl(uint8_t *templData);
++
++    int setMapData(uint8_t *mapData);
 +
 +    int execDRP(void);
 +
@@ -985,6 +722,8 @@ diff -uprN old/modules/imgproc/include/rzv2ma_drp.h new/modules/imgproc/include/
 +    void dst_adr_64aligment(void);
 +
 +    void tmpl_adr_64aligment(void);
++
++    void map_adr_64aligment(void);
 +
 +    uint64_t opencv_bin_addr64_phy;     // physical memory area address (64bit)
 +    
@@ -1015,10 +754,12 @@ diff -uprN old/modules/imgproc/include/rzv2ma_drp.h new/modules/imgproc/include/
 +    uint64_t dst_adr;   // physical address of dst
 +    uint64_t tmpl_adr;  // physical address of match template
 +    uint64_t corner_adr;// physical address of detected corners
++    uint64_t map_adr;   // physical address of map
 +
 +    uint32_t src_size;
 +    uint32_t dst_size;
 +    uint32_t tmpl_size;
++    uint32_t map_size;
 +    
 +    drp_data_t proc[DRP_SEQ_NUM * 2];
 +
@@ -1027,27 +768,20 @@ diff -uprN old/modules/imgproc/include/rzv2ma_drp.h new/modules/imgproc/include/
 +};
 +
 +#endif
-diff -uprN old/modules/imgproc/src/color.cpp new/modules/imgproc/src/color.cpp
---- old/modules/imgproc/src/color.cpp	2019-04-08 02:09:10.000000000 +0900
-+++ new/modules/imgproc/src/color.cpp	2023-11-07 14:01:15.000000000 +0900
+diff --git a/modules/imgproc/src/color.cpp b/modules/imgproc/src/color.cpp
+index 4eaa051..9855342 100644
+--- a/modules/imgproc/src/color.cpp
++++ b/modules/imgproc/src/color.cpp
 @@ -6,6 +6,8 @@
  #include "opencl_kernels_imgproc.hpp"
  #include "color.hpp"
  
 +#include <rzv2ma_drp.h>
-+
++#include <opencv2/core/utils/logger.hpp>
  namespace cv
  {
  
-@@ -151,7 +153,6 @@ static bool ocl_cvtColor( InputArray _sr
- 
- #endif
- 
--
- // helper function for dual-plane modes
- 
- void cvtColorTwoPlane( InputArray _ysrc, InputArray _uvsrc, OutputArray _dst, int code )
-@@ -167,10 +168,19 @@ void cvtColorTwoPlane( InputArray _ysrc,
+@@ -181,6 +183,16 @@ void cvtColorTwoPlane( InputArray _ysrc, InputArray _uvsrc, OutputArray _dst, in
              return;
      }
  
@@ -1060,15 +794,11 @@ diff -uprN old/modules/imgproc/src/color.cpp new/modules/imgproc/src/color.cpp
 +    {
 +        return;
 +    }
-+    
++
      cvtColorTwoPlaneYUV2BGRpair(_ysrc, _uvsrc, _dst, dstChannels(code), swapBlue(code), uIndex(code));
  }
  
--
- //////////////////////////////////////////////////////////////////////////////////////////
- //                                   The main function                                  //
- //////////////////////////////////////////////////////////////////////////////////////////
-@@ -188,6 +198,9 @@ void cvtColor( InputArray _src, OutputAr
+@@ -202,6 +214,9 @@ void cvtColor( InputArray _src, OutputArray _dst, int code, int dcn )
                  !(CV_MAT_DEPTH(_src.type()) == CV_8U && (code == COLOR_Luv2BGR || code == COLOR_Luv2RGB)),
                  ocl_cvtColor(_src, _dst, code, dcn) )
  
@@ -1078,31 +808,42 @@ diff -uprN old/modules/imgproc/src/color.cpp new/modules/imgproc/src/color.cpp
      switch( code )
      {
          case COLOR_BGR2BGRA: case COLOR_RGB2BGRA: case COLOR_BGRA2BGR:
-@@ -307,7 +320,7 @@ void cvtColor( InputArray _src, OutputAr
+@@ -321,8 +336,8 @@ void cvtColor( InputArray _src, OutputArray _dst, int code, int dcn )
          case COLOR_YUV2BGRA_NV21: case COLOR_YUV2RGBA_NV21: case COLOR_YUV2BGRA_NV12: case COLOR_YUV2RGBA_NV12:
              // http://www.fourcc.org/yuv.php#NV21 == yuv420sp -> a plane of 8 bit Y samples followed by an interleaved V/U plane containing 8 bit 2x2 subsampled chroma samples
              // http://www.fourcc.org/yuv.php#NV12 -> a plane of 8 bit Y samples followed by an interleaved U/V plane containing 8 bit 2x2 subsampled colour difference samples
 -            cvtColorTwoPlaneYUV2BGR(_src, _dst, dcn, swapBlue(code), uIndex(code));
+-            break;
 +            cvtColorTwoPlaneYUV2BGR(_src, _dst, dcn, swapBlue(code), uIndex(code), code);
-             break;
++	    break;
  
          case COLOR_YUV2BGR_YV12: case COLOR_YUV2RGB_YV12: case COLOR_YUV2BGRA_YV12: case COLOR_YUV2RGBA_YV12:
-@@ -335,7 +348,7 @@ void cvtColor( InputArray _src, OutputAr
+         case COLOR_YUV2BGR_IYUV: case COLOR_YUV2RGB_IYUV: case COLOR_YUV2BGRA_IYUV: case COLOR_YUV2RGBA_IYUV:
+@@ -349,8 +364,8 @@ void cvtColor( InputArray _src, OutputArray _dst, int code, int dcn )
              {
                  int ycn  = (code==COLOR_YUV2RGB_UYVY || code==COLOR_YUV2BGR_UYVY ||
                              code==COLOR_YUV2RGBA_UYVY || code==COLOR_YUV2BGRA_UYVY) ? 1 : 0;
 -                cvtColorOnePlaneYUV2BGR(_src, _dst, dcn, swapBlue(code), uIndex(code), ycn);
-+                cvtColorOnePlaneYUV2BGR(_src, _dst, dcn, swapBlue(code), uIndex(code), ycn, code);
-                 break;
+-                break;
++		cvtColorOnePlaneYUV2BGR(_src, _dst, dcn, swapBlue(code), uIndex(code), ycn, code);
++		break;
              }
  
-@@ -351,8 +364,58 @@ void cvtColor( InputArray _src, OutputAr
+         case COLOR_RGB2YUV_UYVY: case COLOR_BGR2YUV_UYVY: case COLOR_RGBA2YUV_UYVY: case COLOR_BGRA2YUV_UYVY:
+@@ -362,6 +377,7 @@ void cvtColor( InputArray _src, OutputArray _dst, int code, int dcn )
+             {
+                 int ycn  = (code==COLOR_RGB2YUV_UYVY ||  code==COLOR_BGR2YUV_UYVY ||
+                             code==COLOR_RGBA2YUV_UYVY || code==COLOR_BGRA2YUV_UYVY) ? 1 : 0;
++		CV_LOG_INFO(nullptr, "cvtColor continue to normal opencv.");
+                 cvtColorOnePlaneBGR2YUV(_src, _dst, swapBlue(code), uIndex(code), ycn);
+                 break;
+             }
+@@ -378,7 +394,57 @@ void cvtColor( InputArray _src, OutputArray _dst, int code, int dcn )
          case COLOR_mRGBA2RGBA:
              cvtColormRGBA2RGBA(_src, _dst);
              break;
 -        default:
--            CV_Error( CV_StsBadFlag, "Unknown/unsupported color conversion code" );
-+
++        
 +        /* drp opencva */
 +        case COLOR_YUV_NV12_YUY2:
 +            _dst.create( _src.rows() * 3 / 2, _src.cols(), CV_8UC1 );
@@ -1151,32 +892,26 @@ diff -uprN old/modules/imgproc/src/color.cpp new/modules/imgproc/src/color.cpp
 +            mat_dst = _dst.getMat();
 +            cvtYUVtoNV_drp(mat_src, mat_dst, 3, 1);
 +            break;
-+
-+    default:
-+        CV_Error( CV_StsBadFlag, "Unknown/unsupported color conversion code" );
++	
++	default:
+             CV_Error( CV_StsBadFlag, "Unknown/unsupported color conversion code" );
      }
  }
- } //namespace cv
-diff -uprN old/modules/imgproc/src/color.hpp new/modules/imgproc/src/color.hpp
---- old/modules/imgproc/src/color.hpp	2019-04-08 02:09:10.000000000 +0900
-+++ new/modules/imgproc/src/color.hpp	2023-11-07 14:01:15.000000000 +0900
-@@ -528,12 +528,12 @@ void cvtColorLab2BGR( InputArray _src, O
- void cvtColorLuv2BGR( InputArray _src, OutputArray _dst, int dcn, bool swapb, bool srgb );
- void cvtColorBGR2XYZ( InputArray _src, OutputArray _dst, bool swapb );
- void cvtColorXYZ2BGR( InputArray _src, OutputArray _dst, int dcn, bool swapb );
--
+diff --git a/modules/imgproc/src/color.hpp b/modules/imgproc/src/color.hpp
+index 6ebca26..0dc8a7e 100644
+--- a/modules/imgproc/src/color.hpp
++++ b/modules/imgproc/src/color.hpp
+@@ -559,6 +559,9 @@ void cvtColorXYZ2BGR( InputArray _src, OutputArray _dst, int dcn, bool swapb );
  void cvtColorBGR2YUV( InputArray _src, OutputArray _dst, bool swapb, bool crcb);
  void cvtColorYUV2BGR( InputArray _src, OutputArray _dst, int dcn, bool swapb, bool crcb);
  
--void cvtColorOnePlaneYUV2BGR( InputArray _src, OutputArray _dst, int dcn, bool swapb, int uidx, int ycn);
--void cvtColorTwoPlaneYUV2BGR( InputArray _src, OutputArray _dst, int dcn, bool swapb, int uidx );
 +void cvtColorOnePlaneYUV2BGR( InputArray _src, OutputArray _dst, int dcn, bool swapb, int uidx, int ycn, int color_code);
 +void cvtColorTwoPlaneYUV2BGR( InputArray _src, OutputArray _dst, int dcn, bool swapb, int uidx, int color_code);
 +
- void cvtColorTwoPlaneYUV2BGRpair( InputArray _ysrc, InputArray _uvsrc, OutputArray _dst, int dcn, bool swapb, int uidx );
- void cvtColorThreePlaneYUV2BGR( InputArray _src, OutputArray _dst, int dcn, bool swapb, int uidx );
- void cvtColorBGR2ThreePlaneYUV( InputArray _src, OutputArray _dst, bool swapb, int uidx);
-@@ -555,4 +555,8 @@ void cvtColorGray25x5( InputArray _src,
+ void cvtColorOnePlaneYUV2BGR( InputArray _src, OutputArray _dst, int dcn, bool swapb, int uidx, int ycn);
+ void cvtColorOnePlaneBGR2YUV( InputArray _src, OutputArray _dst, bool swapb, int uidx, int ycn);
+ void cvtColorTwoPlaneYUV2BGR( InputArray _src, OutputArray _dst, int dcn, bool swapb, int uidx );
+@@ -583,4 +586,8 @@ void cvtColorGray25x5( InputArray _src, OutputArray _dst, int gbits);
  void cvtColorRGBA2mRGBA(InputArray _src, OutputArray _dst);
  void cvtColormRGBA2RGBA(InputArray _src, OutputArray _dst);
  
@@ -1185,27 +920,11 @@ diff -uprN old/modules/imgproc/src/color.hpp new/modules/imgproc/src/color.hpp
 +int cvtColorTwoPlane_drp(InputArray _ysrc, InputArray _uvsrc, OutputArray _dst, int color_code);
 +
  } //namespace cv
-diff -uprN old/modules/imgproc/src/color_rgb.dispatch.cpp new/modules/imgproc/src/color_rgb.dispatch.cpp
---- old/modules/imgproc/src/color_rgb.dispatch.cpp	2019-04-08 02:09:10.000000000 +0900
-+++ new/modules/imgproc/src/color_rgb.dispatch.cpp	2023-11-07 14:01:15.000000000 +0900
-@@ -13,7 +13,6 @@
- #define IPP_DISABLE_CVTCOLOR_GRAY2BGR_8UC3 1
- 
- namespace cv {
--
- //
- // IPP functions
- //
-diff -uprN old/modules/imgproc/src/color_yuv.dispatch.cpp new/modules/imgproc/src/color_yuv.dispatch.cpp
---- old/modules/imgproc/src/color_yuv.dispatch.cpp	2019-04-08 02:09:10.000000000 +0900
-+++ new/modules/imgproc/src/color_yuv.dispatch.cpp	2023-11-07 14:01:15.000000000 +0900
-@@ -4,14 +4,600 @@
- 
- #include "precomp.hpp"
- #include "opencl_kernels_imgproc.hpp"
--
- #include "color.hpp"
--
+diff --git a/modules/imgproc/src/color_yuv.dispatch.cpp b/modules/imgproc/src/color_yuv.dispatch.cpp
+index 73e1aea..ac6c6e1 100644
+--- a/modules/imgproc/src/color_yuv.dispatch.cpp
++++ b/modules/imgproc/src/color_yuv.dispatch.cpp
+@@ -10,8 +10,596 @@
  #include "color_yuv.simd.hpp"
  #include "color_yuv.simd_declarations.hpp" // defines CV_CPU_DISPATCH_MODES_ALL=AVX2,...,BASELINE based on CMakeLists.txt content
  
@@ -1802,37 +1521,20 @@ diff -uprN old/modules/imgproc/src/color_yuv.dispatch.cpp new/modules/imgproc/sr
  //
  // HAL functions
  //
-@@ -75,7 +661,6 @@ void cvtYUVtoBGR(const uchar * src_data,
- 
-     CALL_HAL(cvtYUVtoBGR, cv_hal_cvtYUVtoBGR, src_data, src_step, dst_data, dst_step, width, height, depth, dcn, swapBlue, isCbCr);
- 
--
- #if defined(HAVE_IPP)
- #if !IPP_DISABLE_YUV_RGB
-     CV_IPP_CHECK()
-@@ -312,7 +897,7 @@ bool oclCvtColorBGR2ThreePlaneYUV( Input
-     }
- 
-     return h.run();
--}
-+} 
- 
- #endif
- 
-@@ -337,8 +922,25 @@ void cvtColorYUV2BGR(InputArray _src, Ou
+@@ -379,8 +967,25 @@ void cvtColorYUV2BGR(InputArray _src, OutputArray _dst, int dcn, bool swapb, boo
                       h.depth, dcn, swapb, crcb);
  }
  
 -void cvtColorOnePlaneYUV2BGR( InputArray _src, OutputArray _dst, int dcn, bool swapb, int uidx, int ycn)
 +void cvtColorOnePlaneYUV2BGR( InputArray _src, OutputArray _dst, int dcn, bool swapb, int uidx, int ycn, int color_code)
  {
-+    CV_LOG_INFO(nullptr, "cvtColorOnePlaneYUV2BGR start."); 
++    CV_LOG_INFO(nullptr, "cvtColorOnePlaneYUV2BGR start.");
 +
 +    _dst.create( _src.size(), CV_8UC3 );
 +    Mat src = _src.getMat();
 +    Mat dst = _dst.getMat();
 +
-+    /* First, to call drp process */ 
++    /* First, to call drp process */
 +    int return_drp = 0;
 +
 +    return_drp = cv::cvtYUVtoBGR_drp(src, dst, src.cols, src.rows, color_code);
@@ -1841,12 +1543,12 @@ diff -uprN old/modules/imgproc/src/color_yuv.dispatch.cpp new/modules/imgproc/sr
 +        return;
 +    }
 +
-+    CV_LOG_INFO(nullptr, "exec cvtColorOnePlaneYUV2BGR normal OpenCV."); 
++    CV_LOG_INFO(nullptr, "exec cvtColorOnePlaneYUV2BGR normal OpenCV.");
 +
-     CvtHelper< Set<2>, Set<3, 4>, Set<CV_8U> > h(_src, _dst, dcn);
+     CvtHelper< Set<2>, Set<3, 4>, Set<CV_8U>, FROM_UYVY > h(_src, _dst, dcn);
  
      hal::cvtOnePlaneYUVtoBGR(h.src.data, h.src.step, h.dst.data, h.dst.step, h.src.cols, h.src.rows,
-@@ -386,8 +988,25 @@ void cvtColorThreePlaneYUV2BGR( InputArr
+@@ -436,8 +1041,25 @@ void cvtColorThreePlaneYUV2BGR( InputArray _src, OutputArray _dst, int dcn, bool
  // http://www.fourcc.org/yuv.php#NV21 == yuv420sp -> a plane of 8 bit Y samples followed by an interleaved V/U plane containing 8 bit 2x2 subsampled chroma samples
  // http://www.fourcc.org/yuv.php#NV12 -> a plane of 8 bit Y samples followed by an interleaved U/V plane containing 8 bit 2x2 subsampled colour difference samples
  
@@ -1873,9 +1575,10 @@ diff -uprN old/modules/imgproc/src/color_yuv.dispatch.cpp new/modules/imgproc/sr
      if(dcn <= 0) dcn = 3;
      CvtHelper< Set<1>, Set<3, 4>, Set<CV_8U>, FROM_YUV> h(_src, _dst, dcn);
  
-diff -uprN old/modules/imgproc/src/deriv.cpp new/modules/imgproc/src/deriv.cpp
---- old/modules/imgproc/src/deriv.cpp	2019-04-08 02:09:10.000000000 +0900
-+++ new/modules/imgproc/src/deriv.cpp	2023-11-07 14:01:15.000000000 +0900
+diff --git a/modules/imgproc/src/deriv.cpp b/modules/imgproc/src/deriv.cpp
+index 9cec64a..4d3a3b9 100644
+--- a/modules/imgproc/src/deriv.cpp
++++ b/modules/imgproc/src/deriv.cpp
 @@ -46,6 +46,9 @@
  #include "opencv2/core/openvx/ovx_defs.hpp"
  #include "filter.hpp"
@@ -1886,7 +1589,7 @@ diff -uprN old/modules/imgproc/src/deriv.cpp new/modules/imgproc/src/deriv.cpp
  /****************************************************************************************\
                               Sobel & Scharr Derivative Filters
  \****************************************************************************************/
-@@ -411,11 +414,195 @@ static bool ocl_sepFilter3x3_8UC1(InputA
+@@ -411,11 +414,195 @@ static bool ocl_sepFilter3x3_8UC1(InputArray _src, OutputArray _dst, int ddepth,
  }
  #endif
  
@@ -1905,7 +1608,7 @@ diff -uprN old/modules/imgproc/src/deriv.cpp new/modules/imgproc/src/deriv.cpp
 +                int ksize, double scale, double delta, int borderType)
 +{
 +    /* exec drp function process */
-+    CV_LOG_INFO(nullprt, "Sobel_drp start.");
++    CV_LOG_INFO(nullptr, "Sobel_drp start.");
 +
 +    /* get single instance */
 +    rzv2m_drp *drp = rzv2m_drp::get_instance();
@@ -2064,7 +1767,7 @@ diff -uprN old/modules/imgproc/src/deriv.cpp new/modules/imgproc/src/deriv.cpp
 +
 +    delete[] out_image_buffer;
 +
-+    CV_LOG_INFO(nullprt, "Sobel_drp end.");
++    CV_LOG_INFO(nullptr, "Sobel_drp end.");
 +
 +    drp->set_drp_end();
 +
@@ -2077,12 +1780,12 @@ diff -uprN old/modules/imgproc/src/deriv.cpp new/modules/imgproc/src/deriv.cpp
      CV_INSTRUMENT_REGION();
  
 +    /* ddepth to drp */
-+    int ddepth_drp = ddepth;
++    int ddepth_drp = ddepth;    
 +
+     CV_Assert(!_src.empty());
+ 
      int stype = _src.type(), sdepth = CV_MAT_DEPTH(stype), cn = CV_MAT_CN(stype);
-     if (ddepth < 0)
-         ddepth = sdepth;
-@@ -446,6 +633,15 @@ void cv::Sobel( InputArray _src, OutputA
+@@ -448,6 +635,15 @@ void cv::Sobel( InputArray _src, OutputArray _dst, int ddepth, int dx, int dy,
      Mat src = _src.getMat();
      Mat dst = _dst.getMat();
  
@@ -2093,23 +1796,16 @@ diff -uprN old/modules/imgproc/src/deriv.cpp new/modules/imgproc/src/deriv.cpp
 +        return;
 +    }
 +
-+    CV_LOG_INFO(nullprt, "continue to normal opencv.");
++    CV_LOG_INFO(nullptr, "continue to normal opencv.");
 +
      Point ofs;
      Size wsz(src.cols, src.rows);
      if(!(borderType & BORDER_ISOLATED))
-@@ -462,7 +658,6 @@ void cv::Sobel( InputArray _src, OutputA
-     sepFilter2D(src, dst, ddepth, kx, ky, Point(-1, -1), delta, borderType );
- }
- 
--
- void cv::Scharr( InputArray _src, OutputArray _dst, int ddepth, int dx, int dy,
-                  double scale, double delta, int borderType )
- {
-diff -uprN old/modules/imgproc/src/filter.dispatch.cpp new/modules/imgproc/src/filter.dispatch.cpp
---- old/modules/imgproc/src/filter.dispatch.cpp	2019-04-08 02:09:10.000000000 +0900
-+++ new/modules/imgproc/src/filter.dispatch.cpp	2023-11-07 14:01:15.000000000 +0900
-@@ -50,7 +50,8 @@
+diff --git a/modules/imgproc/src/filter.dispatch.cpp b/modules/imgproc/src/filter.dispatch.cpp
+index b5acbc8..500a14a 100644
+--- a/modules/imgproc/src/filter.dispatch.cpp
++++ b/modules/imgproc/src/filter.dispatch.cpp
+@@ -56,7 +56,8 @@
  #include "filter.simd.hpp"
  #include "filter.simd_declarations.hpp" // defines CV_CPU_DISPATCH_MODES_ALL=AVX2,...,BASELINE based on CMakeLists.txt content
  
@@ -2119,7 +1815,7 @@ diff -uprN old/modules/imgproc/src/filter.dispatch.cpp new/modules/imgproc/src/f
  /****************************************************************************************\
                                      Base Image Filter
  \****************************************************************************************/
-@@ -1347,11 +1348,220 @@ void sepFilter2D(int stype, int dtype, i
+@@ -1518,11 +1519,220 @@ void sepFilter2D(int stype, int dtype, int ktype,
  //================================================================
  //   Main interface
  //================================================================
@@ -2136,7 +1832,7 @@ diff -uprN old/modules/imgproc/src/filter.dispatch.cpp new/modules/imgproc/src/f
 +              InputArray _kernel, Point anchor0,
 +              double delta, int borderType)
 +{
-+    CV_LOG_INFO(nullprt, "filter2d_drp start(with ocl support check.) ");
++    CV_LOG_INFO(nullptr, "filter2d_drp start(with ocl support check.) ");
 +
 +    /* exec drp function process */
 +
@@ -2324,7 +2020,7 @@ diff -uprN old/modules/imgproc/src/filter.dispatch.cpp new/modules/imgproc/src/f
 +
 +    delete[] out_image_buffer;
 +
-+    CV_LOG_INFO(nullprt, "Filter2d_drp end.");
++    CV_LOG_INFO(nullptr, "Filter2d_drp end.");
 +
 +    drp->set_drp_end();
 +
@@ -2339,8 +2035,8 @@ diff -uprN old/modules/imgproc/src/filter.dispatch.cpp new/modules/imgproc/src/f
 +
      CV_INSTRUMENT_REGION();
  
-     CV_OCL_RUN(_dst.isUMat() && _src.dims() <= 2,
-@@ -1371,6 +1581,17 @@ void filter2D(InputArray _src, OutputArr
+     CV_Assert(!_src.empty());
+@@ -1545,6 +1755,17 @@ void filter2D(InputArray _src, OutputArray _dst, int ddepth,
      if( (borderType & BORDER_ISOLATED) == 0 )
          src.locateROI( wsz, ofs );
  
@@ -2348,19 +2044,20 @@ diff -uprN old/modules/imgproc/src/filter.dispatch.cpp new/modules/imgproc/src/f
 +    int ret = filter2D_drp(_src, _dst, ddeptharg, _kernel, anchor0, delta, borderType);
 +    if(ret != DRP_NOT_EXECUTE)
 +    {
-+        CV_LOG_INFO(nullprt, "Filter2d_drp nornal end.");
++        CV_LOG_INFO(nullptr, "Filter2d_drp nornal end.");
 +        return;
 +    }
 +
 +    /* if drp function not executed, contine to normal opencv function */
-+    CV_LOG_INFO(nullprt, "continue to nornal opencv procedure.");
++    CV_LOG_INFO(nullptr, "continue to nornal opencv procedure.");
 +
      hal::filter2D(src.type(), dst.type(), kernel.type(),
                    src.data, src.step, dst.data, dst.step,
                    dst.cols, dst.rows, wsz.width, wsz.height, ofs.x, ofs.y,
-diff -uprN old/modules/imgproc/src/imgwarp.cpp new/modules/imgproc/src/imgwarp.cpp
---- old/modules/imgproc/src/imgwarp.cpp	2019-04-08 02:09:10.000000000 +0900
-+++ new/modules/imgproc/src/imgwarp.cpp	2023-11-07 14:01:15.000000000 +0900
+diff --git a/modules/imgproc/src/imgwarp.cpp b/modules/imgproc/src/imgwarp.cpp
+index 39f983a..9b109e7 100644
+--- a/modules/imgproc/src/imgwarp.cpp
++++ b/modules/imgproc/src/imgwarp.cpp
 @@ -56,6 +56,9 @@
  #include "opencv2/core/softfloat.hpp"
  #include "imgwarp.hpp"
@@ -2371,29 +2068,228 @@ diff -uprN old/modules/imgproc/src/imgwarp.cpp new/modules/imgproc/src/imgwarp.c
  using namespace cv;
  
  namespace cv
-@@ -1488,9 +1491,6 @@ static bool ocl_logPolar(InputArray _src
+@@ -1680,6 +1683,205 @@ private:
+ #endif
  
-     if (!(flags & CV_WARP_INVERSE_MAP))
-     {
--
--
--
-         ocl::Kernel computeAngleRadius_Kernel("computeAngleRadius", p);
-         float PI2_height = (float) CV_2PI / dsize.height;
+ }
++int cv::remap_drp(InputArray _src, OutputArray _dst,
++              InputArray _map1, InputArray _map2,
++              int interpolation, int borderMode, const Scalar& borderValue)
++{
++    CV_LOG_INFO(nullptr, "remap_drp start.");
++
++    /* get single instance */
++    rzv2m_drp *drp = rzv2m_drp::get_instance();
++    if(NULL == drp)
++    {
++        CV_LOG_INFO(nullptr, "remap_drp get instance");
++        return DRP_NOT_EXECUTE;
++    }
++
++    int result = DRP_NORMAL_END;
++
++    /* get possible flag */
++    int remap_possiblef = drp->get_drp_possiblef(PARAM_NO_REMAP);
++
++    /* active status only */
++    if(remap_possiblef != CIRCUIT_POSSIBLEF_ACTIVE)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* to convert to Mat class */
++    Mat src_mat = _src.getMat();
++    Mat map_mat = _map1.getMat();
++
++    /* to set remap spec */
++    uint32_t src_width = src_mat.size().width;
++    uint32_t src_height = src_mat.size().height;
++    uint32_t src_ch = src_mat.channels();
++    int src_depth = src_mat.depth();
++
++    uint32_t map_width = map_mat.size().width;
++    uint32_t map_height = map_mat.size().height;
++    int map_depth = map_mat.depth();
++
++    /* checking src width */
++    if(3840 < src_width || 16 > src_width || 0 != src_width % 2)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* checking src height */
++    if(2160 < src_height || 16 > src_height || 0 != src_height % 2)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* checking src channel size */
++    if((1 > src_ch) || (4 < src_ch))
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* checking src depth */
++    if(CV_8U != src_depth)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* checking map1 width */
++    if(3840 < map_width || 16 > map_width || 0 != map_width % 2)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* checking map1 height */
++    if(2160 < map_height || 16 > map_height || 0 != map_height % 2)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* checking map1 depth */
++    if(CV_32F != map_depth)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* checking map2 isn't empty */
++    if(!_map2.empty())
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* checking interpolation */
++    if(interpolation != INTER_LINEAR)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* checking borderMode */
++    if(borderMode != BORDER_CONSTANT)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* dst src size */
++    uint32_t dst_width = map_width;
++    uint32_t dst_height = map_height;
++    uint16_t dst_ch = src_ch;
++
++    /* output image buffer */
++    uint8_t *out_image_buffer;
++
++    /* border value */
++    uint32_t border_value_32t = 0;
++    uint8_t bgra_8t[4];
++
++    bgra_8t[0] = borderValue(0); //B
++    bgra_8t[1] = borderValue(1); //G
++    bgra_8t[2] = borderValue(2); //R
++    bgra_8t[3] = borderValue(3); //A
++
++    memcpy(&border_value_32t, bgra_8t, 4);
++
++    out_image_buffer = new uint8_t[dst_width*dst_height*dst_ch];
++
++    /* check continuous src */
++    if(!src_mat.isContinuous())
++    {
++        src_mat = src_mat.clone();
++    }
++
++    /* check continuous map */
++    if(!map_mat.isContinuous())
++    {
++        map_mat = map_mat.clone();
++    }
++
++    /* set in process to driver */
++    if(drp->set_drp_start() == DRP_CONFLICT_ERROR)
++    {
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* reading opencva binary header info */
++    result = drp->readBinaryHeader();
++    if(DRP_NORMAL_END != result)
++    {
++        CV_LOG_INFO(nullptr, "rmap_drp read header error.");
++        drp->set_drp_end();
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* to set remap parameter */
++    result = drp->setRemapParameter(src_width, src_height, src_ch, dst_width, dst_height, border_value_32t);
++    if(DRP_NORMAL_END != result)
++    {
++        drp->set_drp_end();
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* to set remap src image to drp input area */
++    result = drp->setSrcImage(src_mat.data);
++    if(DRP_NORMAL_END != result)
++    {
++        drp->set_drp_end();
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* to set remap map data to drp input area */
++    result = drp->setMapData(map_mat.data);
++    if(DRP_NORMAL_END != result)
++    {
++        drp->set_drp_end();
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* executing drp process */
++    result = drp->execDRP();
++    if(DRP_NORMAL_END != result)
++    {
++        drp->set_drp_end();
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* to read warpPerspective dst image from drp output area */
++    result = drp->readDstImage(out_image_buffer);
++    if(DRP_NORMAL_END != result)
++    {
++        drp->set_drp_end();
++        return DRP_NOT_EXECUTE;
++    }
++
++    /* to convert mat object */
++    Mat dst_mat_out =  Mat(dst_height, dst_width, CV_8UC(dst_ch), out_image_buffer);
++    dst_mat_out.copyTo(_dst);
++
++    delete[] out_image_buffer;
++
++    drp->set_drp_end();
++
++    CV_LOG_INFO(nullptr, "remap_drp end.");
++
++    return DRP_NORMAL_END;
++}
  
-@@ -1508,11 +1508,7 @@ static bool ocl_logPolar(InputArray _src
-         Size ssize = src_with_border.size();
-         ssize.height -= 2 * ANGLE_BORDER;
-         float ascale =  ssize.height / ((float)CV_2PI);
--
--
-         k.args(ocl_mapx, ocl_mapy, ascale, (float)M, center.x, center.y, ANGLE_BORDER, (unsigned)dsize.width, (unsigned)dsize.height);
--
--
-     }
-     size_t globalThreads[2] = { (size_t)dsize.width , (size_t)dsize.height };
-     size_t localThreads[2] = { mem_size , mem_size };
-@@ -2585,6 +2581,201 @@ void warpAffine(int src_type,
+ void cv::remap( InputArray _src, OutputArray _dst,
+                 InputArray _map1, InputArray _map2,
+@@ -1743,6 +1945,14 @@ void cv::remap( InputArray _src, OutputArray _dst,
+ 
+     CV_Assert( dst.cols < SHRT_MAX && dst.rows < SHRT_MAX && src.cols < SHRT_MAX && src.rows < SHRT_MAX );
+ 
++    int result = cv::remap_drp(_src, _dst, _map1, _map2, interpolation, borderType, borderValue);
++    if(result == DRP_NORMAL_END)
++    {
++        return;
++    }
++
++    CV_LOG_INFO(nullptr, "remap_drp continue to normal opencv.");
++
+     if( dst.data == src.data )
+         src = src.clone();
+ 
+@@ -2722,6 +2932,201 @@ void warpAffine(int src_type,
  } // hal::
  } // cv::
  
@@ -2595,7 +2491,7 @@ diff -uprN old/modules/imgproc/src/imgwarp.cpp new/modules/imgproc/src/imgwarp.c
  
  void cv::warpAffine( InputArray _src, OutputArray _dst,
                       InputArray _M0, Size dsize,
-@@ -2696,11 +2887,18 @@ void cv::warpAffine( InputArray _src, Ou
+@@ -2835,6 +3240,14 @@ void cv::warpAffine( InputArray _src, OutputArray _dst,
      }
  #endif
  
@@ -2610,12 +2506,7 @@ diff -uprN old/modules/imgproc/src/imgwarp.cpp new/modules/imgproc/src/imgwarp.c
      hal::warpAffine(src.type(), src.data, src.step, src.cols, src.rows, dst.data, dst.step, dst.cols, dst.rows,
                      M, interpolation, borderType, borderValue.val);
  }
- 
--
- namespace cv
- {
- 
-@@ -2895,6 +3093,205 @@ void warpPerspective(int src_type,
+@@ -3291,6 +3704,204 @@ void warpPerspective(int src_type,
  } // hal::
  } // cv::
  
@@ -2817,11 +2708,10 @@ diff -uprN old/modules/imgproc/src/imgwarp.cpp new/modules/imgproc/src/imgwarp.c
 +    return DRP_NORMAL_END;
 +}
 +
-+
  void cv::warpPerspective( InputArray _src, OutputArray _dst, InputArray _M0,
                            Size dsize, int flags, int borderType, const Scalar& borderValue )
  {
-@@ -2989,6 +3386,14 @@ void cv::warpPerspective( InputArray _sr
+@@ -3385,6 +3996,14 @@ void cv::warpPerspective( InputArray _src, OutputArray _dst, InputArray _M0,
      if( !(flags & WARP_INVERSE_MAP) )
          invert(matM, matM);
  
@@ -2836,20 +2726,20 @@ diff -uprN old/modules/imgproc/src/imgwarp.cpp new/modules/imgproc/src/imgwarp.c
      hal::warpPerspective(src.type(), src.data, src.step, src.cols, src.rows, dst.data, dst.step, dst.cols, dst.rows,
                          matM.ptr<double>(), interpolation, borderType, borderValue.val);
  }
-diff -uprN old/modules/imgproc/src/morph.dispatch.cpp new/modules/imgproc/src/morph.dispatch.cpp
---- old/modules/imgproc/src/morph.dispatch.cpp	2019-04-08 02:09:10.000000000 +0900
-+++ new/modules/imgproc/src/morph.dispatch.cpp	2023-11-07 14:01:15.000000000 +0900
-@@ -50,7 +50,8 @@
- 
+diff --git a/modules/imgproc/src/morph.dispatch.cpp b/modules/imgproc/src/morph.dispatch.cpp
+index a0857d1..6c03ae2 100644
+--- a/modules/imgproc/src/morph.dispatch.cpp
++++ b/modules/imgproc/src/morph.dispatch.cpp
+@@ -51,6 +51,8 @@
  #include "morph.simd.hpp"
  #include "morph.simd_declarations.hpp" // defines CV_CPU_DISPATCH_MODES_ALL=AVX2,...,BASELINE based on CMakeLists.txt content
--
+ 
 +#include <rzv2ma_drp.h>
 +#include <opencv2/core/utils/logger.hpp>
  
  /****************************************************************************************\
                       Basic Morphological Operations: Erosion & Dilation
-@@ -999,23 +1000,251 @@ static void morphOp( int op, InputArray
+@@ -1001,6 +1003,215 @@ static void morphOp( int op, InputArray _src, OutputArray _dst,
                 (src.isSubmatrix() && !isolated));
  }
  
@@ -2869,7 +2759,7 @@ diff -uprN old/modules/imgproc/src/morph.dispatch.cpp new/modules/imgproc/src/mo
 +                        Point anchor, int iterations,
 +                        int borderType, const Scalar &borderValue)
 +{
-+    CV_LOG_INFO(nullprt, "morphOp_drp start.");
++    CV_LOG_INFO(nullptr, "morphOp_drp start.");
 +
 +    /* in this version it can support dilate or erode */
 +    if (MORPH_DILATE != op && MORPH_ERODE != op)
@@ -3054,7 +2944,7 @@ diff -uprN old/modules/imgproc/src/morph.dispatch.cpp new/modules/imgproc/src/mo
 +
 +    delete[] out_image_buffer;
 +
-+    CV_LOG_INFO(nullprt, "morphOp_drp end.");
++    CV_LOG_INFO(nullptr, "morphOp_drp end.");
 +
 +    /* reset in process flag */
 +    drp->set_drp_end();
@@ -3065,12 +2955,13 @@ diff -uprN old/modules/imgproc/src/morph.dispatch.cpp new/modules/imgproc/src/mo
  void erode( InputArray src, OutputArray dst, InputArray kernel,
                  Point anchor, int iterations,
                  int borderType, const Scalar& borderValue )
- {
-     CV_INSTRUMENT_REGION();
-+    CV_LOG_INFO(nullptr, "start erode filter.");
+@@ -1009,7 +1220,18 @@ void erode( InputArray src, OutputArray dst, InputArray kernel,
+ 
+     CV_Assert(!src.empty());
  
 -    morphOp( MORPH_ERODE, src, dst, kernel, anchor, iterations, borderType, borderValue );
--}
++    CV_LOG_INFO(nullptr, "start erode filter.");
++
 +    int ret_drp = DRP_NORMAL_END;
 +    ret_drp = morphOp_drp(MORPH_ERODE, src, dst, kernel, anchor, iterations, borderType, borderValue);
 +
@@ -3079,15 +2970,16 @@ diff -uprN old/modules/imgproc/src/morph.dispatch.cpp new/modules/imgproc/src/mo
 +        CV_LOG_INFO(nullptr, "exec normal erode.");
 +        morphOp(MORPH_ERODE, src, dst, kernel, anchor, iterations, borderType, borderValue);
 +    }
- 
++
 +    CV_LOG_INFO(nullptr, "erode filter end.");
-+}
+ }
  
- void dilate( InputArray src, OutputArray dst, InputArray kernel,
-                  Point anchor, int iterations,
-                  int borderType, const Scalar& borderValue )
- {
-     CV_INSTRUMENT_REGION();
+ 
+@@ -1021,7 +1243,18 @@ void dilate( InputArray src, OutputArray dst, InputArray kernel,
+ 
+     CV_Assert(!src.empty());
+ 
+-    morphOp( MORPH_DILATE, src, dst, kernel, anchor, iterations, borderType, borderValue );
 +    CV_LOG_INFO(nullptr, "dilate method start.");
 +
 +    int ret_drp = DRP_NORMAL_END;
@@ -3098,15 +2990,15 @@ diff -uprN old/modules/imgproc/src/morph.dispatch.cpp new/modules/imgproc/src/mo
 +        CV_LOG_INFO(nullptr, "exec normal dilate.");
 +        morphOp(MORPH_DILATE, src, dst, kernel, anchor, iterations, borderType, borderValue);
 +    }
- 
--    morphOp( MORPH_DILATE, src, dst, kernel, anchor, iterations, borderType, borderValue );
++
 +    CV_LOG_INFO(nullptr, "dilate filter end.");
  }
  
  #ifdef HAVE_OPENCL
-diff -uprN old/modules/imgproc/src/pyramids.cpp new/modules/imgproc/src/pyramids.cpp
---- old/modules/imgproc/src/pyramids.cpp	2019-04-08 02:09:10.000000000 +0900
-+++ new/modules/imgproc/src/pyramids.cpp	2023-11-07 14:01:15.000000000 +0900
+diff --git a/modules/imgproc/src/pyramids.cpp b/modules/imgproc/src/pyramids.cpp
+index 52f9573..f68a79c 100644
+--- a/modules/imgproc/src/pyramids.cpp
++++ b/modules/imgproc/src/pyramids.cpp
 @@ -46,6 +46,9 @@
  #include "opencv2/core/hal/intrin.hpp"
  
@@ -3117,7 +3009,7 @@ diff -uprN old/modules/imgproc/src/pyramids.cpp new/modules/imgproc/src/pyramids
  
  namespace cv
  {
-@@ -1219,6 +1222,165 @@ static bool openvx_pyrDown( InputArray _
+@@ -1408,6 +1411,165 @@ static bool openvx_pyrDown( InputArray _src, OutputArray _dst, const Size& _dsz,
  }
  #endif
  
@@ -3283,7 +3175,7 @@ diff -uprN old/modules/imgproc/src/pyramids.cpp new/modules/imgproc/src/pyramids
  void cv::pyrDown( InputArray _src, OutputArray _dst, const Size& _dsz, int borderType )
  {
      CV_INSTRUMENT_REGION();
-@@ -1246,6 +1408,14 @@ void cv::pyrDown( InputArray _src, Outpu
+@@ -1435,6 +1597,14 @@ void cv::pyrDown( InputArray _src, OutputArray _dst, const Size& _dsz, int borde
      CV_IPP_RUN(borderTypeNI == BORDER_DEFAULT && (!_src.isSubmatrix() || isolated) && dsz == Size((_src.cols() + 1)/2, (_src.rows() + 1)/2),
          ipp_pyrdown( _src,  _dst,  _dsz,  borderType));
  
@@ -3298,15 +3190,7 @@ diff -uprN old/modules/imgproc/src/pyramids.cpp new/modules/imgproc/src/pyramids
  
      PyrFunc func = 0;
      if( depth == CV_8U )
-@@ -1264,7 +1434,6 @@ void cv::pyrDown( InputArray _src, Outpu
-     func( src, dst, borderType );
- }
- 
--
- #if defined(HAVE_IPP)
- namespace cv
- {
-@@ -1326,6 +1495,163 @@ static bool ipp_pyrup( InputArray _src,
+@@ -1515,6 +1685,163 @@ static bool ipp_pyrup( InputArray _src, OutputArray _dst, const Size& _dsz, int
  }
  #endif
  
@@ -3470,15 +3354,7 @@ diff -uprN old/modules/imgproc/src/pyramids.cpp new/modules/imgproc/src/pyramids
  void cv::pyrUp( InputArray _src, OutputArray _dst, const Size& _dsz, int borderType )
  {
      CV_INSTRUMENT_REGION();
-@@ -1335,7 +1661,6 @@ void cv::pyrUp( InputArray _src, OutputA
-     CV_OCL_RUN(_src.dims() <= 2 && _dst.isUMat(),
-                ocl_pyrUp(_src, _dst, _dsz, borderType))
- 
--
-     Mat src = _src.getMat();
-     Size dsz = _dsz.empty() ? Size(src.cols*2, src.rows*2) : _dsz;
-     _dst.create( dsz, src.type() );
-@@ -1349,6 +1674,13 @@ void cv::pyrUp( InputArray _src, OutputA
+@@ -1538,6 +1865,13 @@ void cv::pyrUp( InputArray _src, OutputArray _dst, const Size& _dsz, int borderT
      CV_IPP_RUN(borderTypeNI == BORDER_DEFAULT && (!_src.isSubmatrix() || isolated) && dsz == Size(_src.cols()*2, _src.rows()*2),
          ipp_pyrup( _src,  _dst,  _dsz,  borderType));
  
@@ -3492,20 +3368,23 @@ diff -uprN old/modules/imgproc/src/pyramids.cpp new/modules/imgproc/src/pyramids
  
      PyrFunc func = 0;
      if( depth == CV_8U )
-diff -uprN old/modules/imgproc/src/resize.cpp new/modules/imgproc/src/resize.cpp
---- old/modules/imgproc/src/resize.cpp	2019-04-08 02:09:10.000000000 +0900
-+++ new/modules/imgproc/src/resize.cpp	2023-11-07 14:01:15.000000000 +0900
-@@ -58,6 +58,9 @@
+diff --git a/modules/imgproc/src/resize.cpp b/modules/imgproc/src/resize.cpp
+index 0943e97..ef7c0c0 100644
+--- a/modules/imgproc/src/resize.cpp
++++ b/modules/imgproc/src/resize.cpp
+@@ -59,6 +59,11 @@
  #include "opencv2/core/softfloat.hpp"
  #include "fixedpoint.inl.hpp"
  
 +#include <rzv2ma_drp.h>
 +#include <opencv2/core/utils/logger.hpp>
 +
++#include <unistd.h>
++
  using namespace cv;
  
  namespace
-@@ -3704,6 +3707,192 @@ void resize(int src_type,
+@@ -4138,6 +4143,192 @@ void resize(int src_type,
  }
  
  } // cv::hal::
@@ -3521,7 +3400,7 @@ diff -uprN old/modules/imgproc/src/resize.cpp new/modules/imgproc/src/resize.cpp
 +int resize_drp(InputArray _src, OutputArray _dst, Size dsize, double inv_scale_x, double inv_scale_y, int interpolation)
 +{
 +    CV_LOG_INFO(nullptr, "resize_drp start.");
-+    
++
 +    /* get single instance */
 +    rzv2m_drp *drp = rzv2m_drp::get_instance();
 +    if(NULL == drp)
@@ -3534,7 +3413,7 @@ diff -uprN old/modules/imgproc/src/resize.cpp new/modules/imgproc/src/resize.cpp
 +
 +    /* get possible flag */
 +    int resize_possiblef = drp->get_drp_possiblef(PARAM_NO_RESIZE);
-+    
++
 +    /* active status only */
 +    if(resize_possiblef != CIRCUIT_POSSIBLEF_ACTIVE)
 +    {
@@ -3542,7 +3421,7 @@ diff -uprN old/modules/imgproc/src/resize.cpp new/modules/imgproc/src/resize.cpp
 +    }
 +
 +    /* to convert to Mat class */
-+    Mat src_mat = _src.getMat(); 
++    Mat src_mat = _src.getMat();
 +
 +    /* to set resize spec */
 +    uint32_t src_width = src_mat.size().width;
@@ -3570,7 +3449,7 @@ diff -uprN old/modules/imgproc/src/resize.cpp new/modules/imgproc/src/resize.cpp
 +        return DRP_NOT_EXECUTE;
 +    }
 +
-+    /* checking channel size */ 
++    /* checking channel size */
 +    if((1 > src_ch) || (4 < src_ch))
 +    {
 +        return DRP_NOT_EXECUTE;
@@ -3592,7 +3471,7 @@ diff -uprN old/modules/imgproc/src/resize.cpp new/modules/imgproc/src/resize.cpp
 +
 +    /* check input size */
 +    if(0 < dsize.area())
-+    {    
++    {
 +        dst_width = dsize.width;
 +        dst_height = dsize.height;
 +    }
@@ -3622,7 +3501,7 @@ diff -uprN old/modules/imgproc/src/resize.cpp new/modules/imgproc/src/resize.cpp
 +    }
 +
 +    /* checking algorizm */
-+    if(INTER_LINEAR != interpolation) 
++    if(INTER_LINEAR != interpolation)
 +    {
 +        return DRP_NOT_EXECUTE;
 +    }
@@ -3640,7 +3519,7 @@ diff -uprN old/modules/imgproc/src/resize.cpp new/modules/imgproc/src/resize.cpp
 +    {
 +        return DRP_NOT_EXECUTE;
 +    }
-+ 
++
 +    /* reading opencva binary header info */
 +    result = drp->readBinaryHeader();
 +    if(DRP_NORMAL_END != result)
@@ -3698,28 +3577,31 @@ diff -uprN old/modules/imgproc/src/resize.cpp new/modules/imgproc/src/resize.cpp
  } // cv::
  
  //==================================================================================================
-@@ -3712,6 +3901,17 @@ void cv::resize( InputArray _src, Output
-                  double inv_scale_x, double inv_scale_y, int interpolation )
+@@ -4147,6 +4338,18 @@ void cv::resize( InputArray _src, OutputArray _dst, Size dsize,
  {
      CV_INSTRUMENT_REGION();
+ 
 +    CV_LOG_INFO(nullptr, "resize method start.");
 +
-+    /* First, to call drp process */ 
++    /* First, to call drp process */
 +    int result = cv::resize_drp(_src, _dst, dsize, inv_scale_x, inv_scale_y, interpolation);
 +    if(result == DRP_NORMAL_END)
 +    {
 +        return;
 +    }
 +
-+    /* If could not execute drp process, then to call normal opencv method */    
++    /* If could not execute drp process, then to call normal opencv method */
 +    CV_LOG_INFO(nullptr, "exec normal resize method.");
- 
++
      Size ssize = _src.size();
  
-diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma_drp.cpp
---- old/modules/imgproc/src/rzv2ma_drp.cpp	1970-01-01 09:00:00.000000000 +0900
-+++ new/modules/imgproc/src/rzv2ma_drp.cpp	2024-01-24 20:51:40.000000000 +0900
-@@ -0,0 +1,2265 @@
+     CV_Assert( !ssize.empty() );
+diff --git b/modules/imgproc/src/rzv2ma_drp.cpp b/modules/imgproc/src/rzv2ma_drp.cpp
+new file mode 100644
+index 0000000..4c3ad74
+--- /dev/null
++++ b/modules/imgproc/src/rzv2ma_drp.cpp
+@@ -0,0 +1,2665 @@
 +/***********************************************************************************************************************
 +* DISCLAIMER
 +* This software is supplied by Renesas Electronics Corporation and is only intended for use with Renesas products. No
@@ -3757,12 +3639,20 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +#include <sys/stat.h>
 +#include <errno.h>
 +#include <mutex>
++#include <semaphore.h>
 +
 +#include <thread>
 +#include <sstream>
 +#include <rzv2ma_drp.h>
 +#include <opencv2/core/base.hpp>
 +#include <opencv2/core/utils/logger.hpp>
++
++/*****************************************
++*  MACROS/DEFINES
++******************************************/
++#define SHM_SEMAPHORE_PATH    "/libdrp_api.so"
++#define SEM_TIMEOUT_SEC      (60) /* 60sec */
++#define SEM_TIMEOUT_NSEC     (60 * 1e6) /* 60msec */
 +
 +/* single instance of rzv2m drp */
 +rzv2m_drp* rzv2m_drp::_singleton = NULL;
@@ -3781,6 +3671,15 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +
 +/* mutex for initialize for api sequence */
 +std::mutex drp_init_for_api_mutex;
++
++/* semaphore for initializing */
++static int g_initializing = 0;
++
++/* semaphore for result */
++static sem_t * g_sem = NULL;
++
++/* semaphore for waiting process counter*/
++static int waiting_count = 0;
 +
 +/*****************************************
 +* Method Name   : rzv2m_drp
@@ -4006,6 +3905,7 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +    src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next to DRP parameter area
 +    dst_adr = src_adr + src_size;
 +    tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
 +    
 +    dst_adr_64aligment();
 +                            
@@ -4097,6 +3997,7 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +    src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next to DRP parameter area
 +    dst_adr = src_adr + src_size;
 +    tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
 +
 +    dst_adr_64aligment();
 +
@@ -4191,6 +4092,7 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +    src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next address to drp parameter
 +    dst_adr = src_adr + src_size; // next address to input image
 +    tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
 +
 +    dst_adr_64aligment();
 +
@@ -4285,6 +4187,7 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +    src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next address to drp parameter
 +    dst_adr = src_adr + src_size; // next address to input image
 +    tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
 +
 +    dst_adr_64aligment();
 +
@@ -4378,6 +4281,7 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +    src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next address to drp parameter
 +    dst_adr = src_adr + src_size; // next address to input image
 +    tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
 +
 +    dst_adr_64aligment();
 +
@@ -4464,6 +4368,7 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +    src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next to DRP parameter area
 +    dst_adr = src_adr + src_size;
 +    tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
 +
 +    dst_adr_64aligment();
 +                                       
@@ -4557,6 +4462,7 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +    src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next address to drp parameter
 +    dst_adr = src_adr + src_size; // next address to input image
 +    tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
 +
 +    dst_adr_64aligment();
 +
@@ -4659,6 +4565,7 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +    src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next address to drp parameter
 +    dst_adr = src_adr + src_size; // next address to input image
 +    tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
 +
 +    dst_adr_64aligment();
 +
@@ -4756,6 +4663,7 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +    /* to write drp parameters to memory area */
 +    src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next address to drp parameter
 +    tmpl_adr = src_adr + src_size; // next address to template
++    map_adr = NULL;
 +
 +    tmpl_adr_64aligment();
 +	
@@ -4901,6 +4809,7 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +    src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next to DRP parameter area
 +    dst_adr = src_adr + src_size;
 +    tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
 +    
 +    dst_adr_64aligment();
 +                            
@@ -4994,6 +4903,7 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +    src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next to DRP parameter area
 +    dst_adr = src_adr + src_size;
 +    tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
 +    
 +    dst_adr_64aligment();
 +                            
@@ -5079,6 +4989,7 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +    src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next to DRP parameter area
 +    dst_adr = src_adr + src_size;
 +    tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
 +    
 +    dst_adr_64aligment();
 +                            
@@ -5165,6 +5076,7 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +    src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE;  // next to DRP parameter area
 +    dst_adr = src_adr + src_size;
 +    tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
 +    
 +    dst_adr_64aligment();
 +                            
@@ -5259,6 +5171,7 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +    src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE; // next to DRP parameter area
 +    dst_adr = src_adr + src_size;
 +    tmpl_adr = NULL;    //for 40bit addr
++    map_adr = NULL;
 + 
 +    dst_adr_64aligment();
 +
@@ -5322,6 +5235,159 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +
 +    return DRP_NORMAL_END;
 +}
++
++/**************************************************************************************************************
++* Method Name   : setRemapParameter
++* Description   : to set REMAP parameter to drp
++* Arguments     : src_width    = src image width,
++                  src_height   = src image height,
++                  src_ch       = src image channels,
++                  dst_width    = dst image width,
++                  dst_height   = dst image height,
++                  border_color = color
++* Return value  : DRP_NORMAL_END if succeeded
++*                 DRP_PARAM_ERROR otherwise
++***************************************************************************************************************/
++int rzv2m_drp::setRemapParameter(uint16_t src_width, uint16_t src_height, uint16_t src_ch,
++                uint16_t dst_width, uint16_t dst_height, uint32_t border_color)
++{
++    int ret = 0;
++    int circuit_no = PARAM_NO_REMAP; // REMAP circuit index
++    uint8_t drp_remap_param[PARAM_SIZE_REMAP];
++
++    src_size = src_width * src_height * src_ch;
++    dst_size = dst_width * dst_height * src_ch;
++
++    map_size = dst_width * dst_height * sizeof(float) * 2;
++
++    possiblef    = *(uint32_t *)(&opencv_bin_p[opencv_bin_list_base + 32 * circuit_no]);     // existence flag of circuit data
++    drp_position = *(uint32_t *)(&opencv_bin_p[opencv_bin_list_base + 32 * circuit_no + 4]); // address at circuit data (offset value from CONFIG_BASE)
++    drp_size     = *(uint32_t *)(&opencv_bin_p[opencv_bin_list_base + 32 * circuit_no + 8]); // size of REMAP circuit
++
++    /*  calculate address value of input image and output image */
++    src_adr = opencv_bin_addr64_phy + opencv_bin_param_base + DRP_PARAM_SIZE; // next to DRP parameter area
++
++    dst_adr = src_adr + src_size;
++    tmpl_adr = NULL;    //for 40bit addr
++
++    dst_adr_64aligment();
++
++    map_adr = dst_adr + dst_size;
++
++    map_adr_64aligment();
++
++    /* set REMAP drp rapameter to local variables */
++    *((uint32_t *)(&drp_remap_param[0]))  = src_adr;      // src image address
++    *((uint32_t *)(&drp_remap_param[4]))  = dst_adr;      // dst image address
++    *((uint16_t *)(&drp_remap_param[8]))  = src_width;    // input width (pixel)
++    *((uint16_t *)(&drp_remap_param[10])) = src_height;   // input height (pixel)
++    *((uint16_t *)(&drp_remap_param[12])) = src_ch;       // input channels (1 fixed)
++    *((uint16_t *)(&drp_remap_param[14])) = 0;            // reserved (0 fixed)
++    *((uint16_t *)(&drp_remap_param[16])) = dst_width;    // output width (pixel)
++    *((uint16_t *)(&drp_remap_param[18])) = dst_height;   // output height (pixel)
++    *((uint16_t *)(&drp_remap_param[20])) = 0;            // reserved (0 fixed)
++    *((uint16_t *)(&drp_remap_param[22])) = 0;            // reserved (0 fixed)
++    memset(&drp_remap_param[24], 0, 16);                  // sync set
++    *((uint16_t *)(&drp_remap_param[40])) = 0;            // CPU ionterupt on (0 fixed)
++    memset(&drp_remap_param[42], 0, 6);                   // reserved (0 fixed)
++    *((uint32_t *)(&drp_remap_param[48])) = map_adr;      // map address
++    *((uint32_t *)(&drp_remap_param[50])) = border_color; // color
++
++    /* to write drp parameters to memory area */
++    proc[DRPPARAM1].address = opencv_bin_addr64_phy + opencv_bin_param_base; // pysical address
++    proc[DRPPARAM1].size = PARAM_SIZE_REMAP;                                  // size of param (56 byte)
++
++    do
++    {
++        errno = 0;
++        ret = ioctl(fd_drp, DRP_ASSIGN, &proc[DRPPARAM1]); // to assign to drp area
++    } while ((-1 == ret) && (ERESTART == errno));
++
++    if ((0 != ret) && (EACCES == errno))
++    {
++        conflict_action_exec();
++        return DRP_NOT_EXECUTE;
++    }
++
++    if (!((0 == ret) && (0 == errno)))
++    {
++        fprintf(stderr, "[ERROR] Failed to assign DRP parameter11111\n");
++
++        return DRP_PARAM_ERROR;
++    }
++
++    do
++    {
++        errno = 0;
++        ret = write(fd_drp, drp_remap_param, PARAM_SIZE_REMAP); // to write parameter to specified address
++    } while ((-1 == ret) && (ERESTART == errno));
++
++    if ((-1 == ret) && (EACCES == errno))
++    {
++        conflict_action_exec();
++        return DRP_NOT_EXECUTE;
++    }
++
++    if (ret != PARAM_SIZE_REMAP)
++    {
++        fprintf(stderr, "[ERROR] Failed to write DRP parameter\n");
++        return DRP_PARAM_ERROR;
++    }
++
++    return DRP_NORMAL_END;
++}
++
++/*****************************************
++* Method Name   : setMapData
++* Description   : to set map data to drp input area
++* Arguments     : mapData = map data area
++* Return value  : DRP_NORMAL_END if succeeded
++*                 DRP_SRC_IMAGE_ERROR otherwise
++******************************************/
++ int rzv2m_drp::setMapData(uint8_t *mapData)
++ {
++    int ret = 0;
++
++    drp_data_t map_data;
++    map_data.address = map_adr;          // physical memory address of input map area
++    map_data.size = map_size;            // input map size
++
++    do
++    {
++        errno = 0;
++        ret = ioctl(fd_drp, DRP_ASSIGN, &map_data);
++    } while ((-1 == ret) && (ERESTART == errno));
++
++    if ((0 != ret) && (EACCES == errno))
++    {
++        conflict_action_exec();
++        return DRP_NOT_EXECUTE;
++    }
++
++    if (!((0 == ret) && (0 == errno)))
++    {
++        return DRP_SRC_IMAGE_ERROR;
++    }
++
++    do
++    {
++        errno= 0;
++        ret = write(fd_drp, mapData, map_size);
++    } while ((-1 == ret) && (ERESTART == errno));
++
++    if ((-1 == ret) && (EACCES == errno))
++    {
++        conflict_action_exec();
++        return DRP_NOT_EXECUTE;
++    }
++
++    if ((uint32_t)ret != map_size)
++    {
++        return DRP_SRC_IMAGE_ERROR;
++    }
++
++    return DRP_NORMAL_END;
++ }
 +
 +/*****************************************
 +* Method Name   : setSrcImage
@@ -5408,15 +5474,22 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +    seq.iodata[1].size    = dst_size;
 +    seq.iodata[1].pos     = 4;
 +    
-+    if( tmpl_adr == NULL )
++    if( ( tmpl_adr == NULL ) && ( map_adr == NULL ) )
 +    {
 +        seq.iodata_num          = 2;
 +    }
-+    else
++    else if( tmpl_adr != NULL )
 +    {
 +        seq.iodata_num          = 3;    //Template matching
 +        seq.iodata[2].address   = tmpl_adr;
 +        seq.iodata[2].size      = tmpl_size;
++        seq.iodata[2].pos       = 48;
++    }
++    else if( map_adr != NULL )
++    {
++        seq.iodata_num          = 3;    //Remap
++        seq.iodata[2].address   = map_adr;
++        seq.iodata[2].size      = map_size;
 +        seq.iodata[2].pos       = 48;
 +    }
 +    
@@ -5569,6 +5642,23 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +
 +    align = 64 - (tmpl_adr % 64);
 +    tmpl_adr = tmpl_adr + align; 
++
++    return;
++}
++
++/*****************************************
++* Method Name   : map_adr_64aligment()
++* Description   : calc 64 bit aligment address
++* Arguments     : none
++* Return value  : void
++******************************************/
++void rzv2m_drp::map_adr_64aligment()
++{
++    /* 64bit aligment */
++    uint32_t align = 0;
++
++    align = 64 - (map_adr % 64);
++    map_adr = map_adr + align; 
 +
 +    return;
 +}
@@ -5800,6 +5890,177 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +}
 +
 +/*****************************************
++* Method Name   : DRP_sem_open(void)
++* Description   : Open DRP semaphore
++* Arguments     :  
++* Return value  : =0:reset ok, <0: reset error 
++******************************************/
++static int DRP_sem_open(void)
++{
++    int ret = 0;
++
++    while (1 == g_initializing)
++    {
++        usleep(100);   /* 0.1 msec */
++    }
++    if ((NULL != g_sem) && (SEM_FAILED != g_sem))
++    {
++        /* Already opened */
++        return 0;
++    }
++    g_initializing = 1;
++
++    errno = 0;
++    g_sem = sem_open(SHM_SEMAPHORE_PATH, O_RDWR | O_CREAT | O_EXCL, 0660, 1);
++    if (EEXIST == errno)
++    {
++        CV_LOG_INFO(nullptr, "DRP_sem is already exists. Open Created sem.");
++        waiting_count = 0;
++        g_sem = sem_open(SHM_SEMAPHORE_PATH, O_RDWR);
++    }
++    else if (SEM_FAILED == g_sem)
++    {
++        CV_LOG_INFO(nullptr, "failed to open DRP semaphore file");
++        g_sem = NULL;
++        ret = -1;
++    }
++
++    if (0 != ret)
++    {
++        CV_LOG_INFO(nullptr, "Failed in DRP_sem_open");
++    }
++    g_initializing = 0;
++    return ret;
++}
++
++/*****************************************
++* Method Name   : DRP_sem_close(void)
++* Description   : Close DRP semaphore
++* Arguments     :  
++* Return value  : =0:reset ok, <0: reset error 
++******************************************/
++static int DRP_sem_close(void)
++{
++    CV_LOG_INFO(nullptr, "DRP_sem_close start.");
++    int ret = 0;
++
++    if (1 == g_initializing)
++    {
++        usleep(100);   /* 0.1 msec */
++    }
++
++    if ((NULL == g_sem) || (SEM_FAILED == g_sem))
++    {
++        /* sem is not existed */
++        return 0;
++    }
++    g_initializing = 1;
++    
++    ret = sem_close(g_sem);
++    if (0 != ret)
++    {
++        CV_LOG_INFO(nullptr,"Failed in DRP_sem_close");
++    }
++    g_sem = NULL;
++    g_initializing = 0;
++    waiting_count = 0;
++
++    return ret;
++}
++
++/*****************************************
++* Method Name   : DRP_sem_post(void)
++* Description   : Post DRP semaphore
++* Arguments     :  
++* Return value  : =0:reset ok, <0: reset error 
++******************************************/
++static int DRP_sem_post(void)
++{
++    int sval = -1;
++    int ret;
++
++    waiting_count --;
++
++    CV_LOG_INFO(nullptr,"DRP_sem_post start");
++    CV_LOG_INFO(nullptr, "DRP_sem_post in DRP_sem_open start.");
++    ret = DRP_sem_open();
++    if (0 != ret)
++    {
++        return ret;
++    }
++    ret = sem_getvalue(g_sem, &sval);
++    if (0 != ret)
++    {
++        CV_LOG_INFO(nullptr, "try sem_post, but sem is invalid.");
++        return -1;
++    }
++    /* sem value must be 0 or 1 */
++    if (0 >= sval)
++    {
++        CV_LOG_INFO(nullptr, "sem_post start. wating threads = " << waiting_count);
++        return sem_post(g_sem);
++    }
++    return 0;
++}
++
++/*****************************************
++* Method Name   : DRP_sem_wait(void)
++* Description   : Wait DRP semaphore
++* Arguments     :  
++* Return value  : =0:reset ok, <0: reset error 
++******************************************/
++static int DRP_sem_wait(void)
++{
++    int ret;
++    struct timespec timeout;
++    
++    CV_LOG_INFO(nullptr, "DRP_sem_wait start");
++    CV_LOG_INFO(nullptr, "DRP_sem_wait in DRP_sem_open start.")
++    ret = DRP_sem_open();
++    if (0 != ret)
++    {
++        return ret;
++    }
++
++    clock_gettime(CLOCK_REALTIME, &timeout);
++    timeout.tv_sec += SEM_TIMEOUT_SEC;
++    timeout.tv_nsec += SEM_TIMEOUT_NSEC;
++    if (1e9 < timeout.tv_nsec)
++    {
++        timeout.tv_sec += 1;
++        timeout.tv_nsec -= 1e9;
++    }
++
++    errno = 0;
++
++    CV_LOG_INFO(nullptr, "sem_timedwait start. waiting threads =" << waiting_count);
++    waiting_count ++;
++
++    ret = sem_timedwait(g_sem, &timeout);
++    if (ETIMEDOUT == errno)
++    {
++        CV_LOG_INFO(nullptr, "DRP semaphore is locked too long time, so unlock and try to lock again.");
++        /* try again with sem_post */
++        ret = DRP_sem_post();
++        if (0 == ret)
++        {
++            ret = DRP_sem_wait();
++        }
++        else
++        {
++            CV_LOG_INFO(nullptr, "Failed to unlock DRP semaphore.");
++        }
++    }
++
++    if (0 != ret)
++    {
++        CV_LOG_INFO(nullptr, "Failed in sem_waite");
++    }
++
++    return ret;
++}
++
++/*****************************************
 +* Method Name   : set_drp_end()
 +* Description   : reset to OpenCVA inprocess
 +* Arguments     :  
@@ -5826,6 +6087,14 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +        CV_LOG_INFO(nullptr, "drp in process reset.");
 +    }
 +#endif
++
++    DRP_sem_post();
++
++    if(waiting_count <= 0)
++    {
++        DRP_sem_close();
++    }
++
 +    return DRP_NORMAL_END;
 +}
 +
@@ -5865,6 +6134,19 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +        CV_LOG_INFO(nullptr, "drp in process set.");
 +    }
 +#endif
++
++    int ret_sem = 0;
++
++    // DRP_sem_wait in DRP_sem_open.
++    ret_sem = DRP_sem_wait();
++    if (0 != ret_sem)
++    {
++        CV_LOG_INFO(nullptr, "DRP_sem_wait error.");
++        // Return this error code as the calling DRP execution function determines 
++        // that execution is not possible due to DRP_CONFLICT_ERROR.
++        return DRP_CONFLICT_ERROR;
++    }
++
 +    return DRP_NORMAL_END;
 +}
 +
@@ -5985,45 +6267,40 @@ diff -uprN old/modules/imgproc/src/rzv2ma_drp.cpp new/modules/imgproc/src/rzv2ma
 +{
 +    close(fd_drp);
 +}
-\ ファイル末尾に改行がありません
-diff -uprN old/modules/imgproc/src/smooth.dispatch.cpp new/modules/imgproc/src/smooth.dispatch.cpp
---- old/modules/imgproc/src/smooth.dispatch.cpp	2019-04-08 02:09:10.000000000 +0900
-+++ new/modules/imgproc/src/smooth.dispatch.cpp	2023-11-07 14:01:15.000000000 +0900
-@@ -53,6 +53,7 @@
- #include "filter.hpp"
+\ No newline at end of file
+diff --git a/modules/imgproc/src/smooth.dispatch.cpp b/modules/imgproc/src/smooth.dispatch.cpp
+index 8a521d6..397acdf 100644
+--- a/modules/imgproc/src/smooth.dispatch.cpp
++++ b/modules/imgproc/src/smooth.dispatch.cpp
+@@ -54,6 +54,7 @@
+ #include "opencl_kernels_imgproc.hpp"
  
- #include "opencv2/core/softfloat.hpp"
+ #include "opencv2/core/openvx/ovx_defs.hpp"
 +#include "opencv2/core/utils/logger.hpp"
  
- namespace cv {
- #include "fixedpoint.inl.hpp"
-@@ -61,6 +62,17 @@ namespace cv {
+ #include "filter.hpp"
+ 
+@@ -66,6 +67,11 @@ namespace cv {
  #include "smooth.simd.hpp"
  #include "smooth.simd_declarations.hpp" // defines CV_CPU_DISPATCH_MODES_ALL=AVX2,...,BASELINE based on CMakeLists.txt content
  
 +#include <iostream>
 +#include <rzv2ma_drp.h>
 +
-+
 +#include <unistd.h>
-+
-+
-+
-+
-+
 +
  namespace cv {
  
  /****************************************************************************************\
-@@ -477,16 +489,296 @@ static bool ipp_GaussianBlur(InputArray
+@@ -608,17 +614,298 @@ static bool validateGaussianBlurKernel(std::vector<T>& kernel)
+     return isValid;
  }
- #endif
  
 +/***********************************************************
 +* Method Name   : GaussianBlur_drp
 +* Description   : to execute GaussianBlur_drp
 +* Arguments     : src_mat = input Mat object, dst_mat = output Mat object
-+*               : ksize = kernel size 
++*               : ksize = kernel size
 +* Return value  : DRP_NORMAL_END if succeeded
 +*                 DRP_NOT_EXECUTE otherwise
 +************************************************************/
@@ -6043,14 +6320,14 @@ diff -uprN old/modules/imgproc/src/smooth.dispatch.cpp new/modules/imgproc/src/s
 +
 +    /* get possible flag */
 +    int resize_possiblef = drp->get_drp_possiblef(PARAM_NO_GAUSSIAN);
-+    
++
 +    /* active status only */
 +    if(resize_possiblef != CIRCUIT_POSSIBLEF_ACTIVE)
 +    {
 +        return DRP_NOT_EXECUTE;
 +    }
 +
-+    CV_LOG_INFO(nullprt, "GaussianBlur_drp start.");
++    CV_LOG_INFO(nullptr, "GaussianBlur_drp start.");
 +
 +    uint16_t src_ch = src_mat.channels();
 +    uint8_t *out_image_buffer;
@@ -6270,7 +6547,7 @@ diff -uprN old/modules/imgproc/src/smooth.dispatch.cpp new/modules/imgproc/src/s
 +
 +    delete[] out_image_buffer;
 +
-+    CV_LOG_INFO(nullprt, "GaussianBlur_drp end.");
++    CV_LOG_INFO(nullptr, "GaussianBlur_drp end.");
 +
 +    drp->set_drp_end();
 +  
@@ -6283,15 +6560,17 @@ diff -uprN old/modules/imgproc/src/smooth.dispatch.cpp new/modules/imgproc/src/s
                    int borderType)
  {
      CV_INSTRUMENT_REGION();
-+    
+ 
 +    /* exec drp function */
 +    int ret_drp = DRP_NORMAL_END;
++
+     CV_Assert(!_src.empty());
  
 +    /* it is nesessary to create dst mat object. */
      int type = _src.type();
      Size size = _src.size();
      _dst.create( size, type );
- 
++    
 +    /* convert to mat object (it needs to do after dst created.)*/
 +    Mat src_mat_drp = _src.getMat();
 +    Mat dst_mat_drp = _dst.getMat();
@@ -6307,21 +6586,15 @@ diff -uprN old/modules/imgproc/src/smooth.dispatch.cpp new/modules/imgproc/src/s
 +
 +    /* following to exec normal OpenCV function */
 +    /* it needs created dst mat object. */
-+    CV_LOG_INFO(nullprt, "GaussianBlur opencv normal process.");
 +
++    CV_LOG_INFO(nullptr, "GaussianBlur opencv normal process.");
+ 
      if( (borderType & ~BORDER_ISOLATED) != BORDER_CONSTANT &&
          ((borderType & BORDER_ISOLATED) != 0 || !_src.getMat().isSubmatrix()) )
-     {
-@@ -579,4 +871,4 @@ cvSmooth( const void* srcarr, void* dsta
-         CV_Error( CV_StsUnmatchedFormats, "The destination image does not have the proper type" );
- }
- 
--/* End of file. */
-+/* End of file. */
-\ ファイル末尾に改行がありません
-diff -uprN old/modules/imgproc/src/templmatch.cpp new/modules/imgproc/src/templmatch.cpp
---- old/modules/imgproc/src/templmatch.cpp	2019-04-08 02:09:10.000000000 +0900
-+++ new/modules/imgproc/src/templmatch.cpp	2023-11-07 14:01:15.000000000 +0900
+diff --git a/modules/imgproc/src/templmatch.cpp b/modules/imgproc/src/templmatch.cpp
+index 67845e7..248489b 100644
+--- a/modules/imgproc/src/templmatch.cpp
++++ b/modules/imgproc/src/templmatch.cpp
 @@ -42,6 +42,9 @@
  #include "precomp.hpp"
  #include "opencl_kernels_imgproc.hpp"
@@ -6332,7 +6605,7 @@ diff -uprN old/modules/imgproc/src/templmatch.cpp new/modules/imgproc/src/templm
  ////////////////////////////////////////////////// matchTemplate //////////////////////////////////////////////////////////
  
  namespace cv
-@@ -1092,6 +1095,177 @@ static bool ipp_matchTemplate( Mat& img,
+@@ -1155,6 +1158,176 @@ static bool ipp_matchTemplate( Mat& img, Mat& templ, Mat& result, int method)
  
  ////////////////////////////////////////////////////////////////////////////////////////////////////////
  
@@ -6346,8 +6619,7 @@ diff -uprN old/modules/imgproc/src/templmatch.cpp new/modules/imgproc/src/templm
 +******************************************/
 +int cv::matchTemplate_drp(InputArray _img, InputArray _templ, OutputArray _result, int method, InputArray _mask)
 +{
-+    CV_LOG_INFO(nullprt, "matchTemplate_drp start.");
-+
++    CV_LOG_INFO(nullptr, "matchTemplate_drp start.");
 +    /* get single instance */
 +    rzv2m_drp *drp = rzv2m_drp::get_instance();
 +    if (NULL == drp)
@@ -6361,7 +6633,7 @@ diff -uprN old/modules/imgproc/src/templmatch.cpp new/modules/imgproc/src/templm
 +    /* active status only */
 +    if(resize_possiblef != CIRCUIT_POSSIBLEF_ACTIVE)
 +    {
-+        CV_LOG_INFO(nullprt, "matchTemplate disable.");
++        CV_LOG_INFO(nullptr, "matchTemplate disable.");
 +        return DRP_NOT_EXECUTE;
 +    }
 +
@@ -6500,7 +6772,7 @@ diff -uprN old/modules/imgproc/src/templmatch.cpp new/modules/imgproc/src/templm
 +
 +    delete[] out_image_buffer;
 +
-+    CV_LOG_INFO(nullprt, "matchTemplate_drp end.");
++    CV_LOG_INFO(nullptr, "matchTemplate_drp end.");
 +
 +    drp->set_drp_end();
 +
@@ -6510,25 +6782,26 @@ diff -uprN old/modules/imgproc/src/templmatch.cpp new/modules/imgproc/src/templm
  void cv::matchTemplate( InputArray _img, InputArray _templ, OutputArray _result, int method, InputArray _mask )
  {
      CV_INSTRUMENT_REGION();
-@@ -1125,6 +1299,15 @@ void cv::matchTemplate( InputArray _img,
+@@ -1187,6 +1360,15 @@ void cv::matchTemplate( InputArray _img, InputArray _templ, OutputArray _result,
+     Mat result = _result.getMat();
  
      CV_IPP_RUN_FAST(ipp_matchTemplate(img, templ, result, method))
- 
++    
 +    int ret = matchTemplate_drp(_img, _templ, _result, method, _mask);
 +
 +    if(ret != DRP_NOT_EXECUTE)
 +    {
-+        return;
++	 return;
 +    }
 +
-+    CV_LOG_INFO(nullprt, "continue to normal opencv.");
-+
-     crossCorr( img, templ, result, result.size(), result.type(), Point(0,0), 0, 0);
++    CV_LOG_INFO(nullptr, "continue to normal opencv.");
  
-     common_matchTemplate(img, templ, result, method, cn);
-diff -uprN old/modules/imgproc/src/thresh.cpp new/modules/imgproc/src/thresh.cpp
---- old/modules/imgproc/src/thresh.cpp	2019-04-08 02:09:10.000000000 +0900
-+++ new/modules/imgproc/src/thresh.cpp	2023-11-07 14:01:15.000000000 +0900
+     crossCorr( img, templ, result, Point(0,0), 0, 0);
+ 
+diff --git a/modules/imgproc/src/thresh.cpp b/modules/imgproc/src/thresh.cpp
+index 4622691..16b8aec 100644
+--- a/modules/imgproc/src/thresh.cpp
++++ b/modules/imgproc/src/thresh.cpp
 @@ -46,6 +46,9 @@
  
  #include "opencv2/core/openvx/ovx_defs.hpp"
@@ -6539,7 +6812,7 @@ diff -uprN old/modules/imgproc/src/thresh.cpp new/modules/imgproc/src/thresh.cpp
  namespace cv
  {
  
-@@ -1617,12 +1620,189 @@ double cv::threshold( InputArray _src, O
+@@ -1664,12 +1667,189 @@ double cv::threshold( InputArray _src, OutputArray _dst, double thresh, double m
      return thresh;
  }
  
@@ -6556,7 +6829,7 @@ diff -uprN old/modules/imgproc/src/thresh.cpp new/modules/imgproc/src/thresh.cpp
 +int cv::adaptiveThreshold_drp( InputArray _src, OutputArray _dst, double max_value,
 +    int adaptive_method, int threshold_type, int block_size, double threshold_c )
 +{
-+    CV_LOG_INFO(nullprt, "adaptiveThreshold_drp start.");
++    CV_LOG_INFO(nullptr, "adaptiveThreshold_drp start.");
 +
 +    /* get single instance */
 +    rzv2m_drp *drp = rzv2m_drp::get_instance();
@@ -6567,7 +6840,7 @@ diff -uprN old/modules/imgproc/src/thresh.cpp new/modules/imgproc/src/thresh.cpp
 +
 +    /* get possible flag */
 +    int resize_possiblef = drp->get_drp_possiblef(PARAM_NO_ATHRESHOLD);
-+    
++
 +    /* active status only */
 +    if(resize_possiblef != CIRCUIT_POSSIBLEF_ACTIVE)
 +    {
@@ -6577,7 +6850,7 @@ diff -uprN old/modules/imgproc/src/thresh.cpp new/modules/imgproc/src/thresh.cpp
 +    /* exec drp function process */
 +    /* convert to mat object */
 +    Mat src_mat = _src.getMat();
-+   
++
 +    /* first, check can exec drp circuit */
 +    uint32_t src_width = src_mat.cols;
 +    uint32_t src_height = src_mat.rows;
@@ -6627,7 +6900,7 @@ diff -uprN old/modules/imgproc/src/thresh.cpp new/modules/imgproc/src/thresh.cpp
 +    {
 +        return DRP_NOT_EXECUTE;
 +    }
-+    
++
 +    if (3 > block_size || 255 < block_size || (int)src_width <= block_size || (int)src_height <= block_size || 1 != block_size % 2)
 +    {
 +        return DRP_NOT_EXECUTE;
@@ -6640,8 +6913,8 @@ diff -uprN old/modules/imgproc/src/thresh.cpp new/modules/imgproc/src/thresh.cpp
 +    /* get 8bit of decimal point, truncate rest */
 +    uint16_t threshold_c_16 = static_cast<uint16_t>(std::round(threshold_c * (1 << 8)));
 +
-+    CV_LOG_INFO(nullprt, "adaptiveThreshold_drp exec.");
-+   
++    CV_LOG_INFO(nullptr, "adaptiveThreshold_drp exec.");
++
 +    /* it is nesessary to create dst mat object. */
 +    _dst.create(src_mat.size(), CV_MAKETYPE(src_mat.depth(), src_ch));
 +    Mat dst_mat = _dst.getMat();
@@ -6696,15 +6969,15 @@ diff -uprN old/modules/imgproc/src/thresh.cpp new/modules/imgproc/src/thresh.cpp
 +    if (DRP_NORMAL_END != result)
 +    {
 +        drp->set_drp_end();
-+        return DRP_NOT_EXECUTE;       
++        return DRP_NOT_EXECUTE;
 +    }
-+    
++
 +    Mat dst_mat_out = Mat(dst_height, dst_width, CV_MAKETYPE(src_mat.depth(), src_ch), out_image_buffer);
 +    dst_mat_out.copyTo(dst_mat);
 +
 +    delete[] out_image_buffer;
 +
-+    CV_LOG_INFO(nullprt, "adaptiveThreshold_drp end.");
++    CV_LOG_INFO(nullptr, "adaptiveThreshold_drp end.");
 +
 +    drp->set_drp_end();
 +
@@ -6720,18 +6993,19 @@ diff -uprN old/modules/imgproc/src/thresh.cpp new/modules/imgproc/src/thresh.cpp
 +    int ret = cv::adaptiveThreshold_drp(_src, _dst, maxValue, method, type, blockSize, delta);
 +    if(ret != DRP_NOT_EXECUTE)
 +    {
-+        CV_LOG_INFO(nullprt, "adaptiveThreshold_drp nornal end.");
++        CV_LOG_INFO(nullptr, "adaptiveThreshold_drp nornal end.");
 +        return;
 +    }
 +
-+    CV_LOG_INFO(nullprt, "adaptiveThreshold exec nornal opencv.");
++    CV_LOG_INFO(nullptr, "adaptiveThreshold exec nornal opencv.");
 +
      Mat src = _src.getMat();
      CV_Assert( src.type() == CV_8UC1 );
      CV_Assert( blockSize % 2 == 1 && blockSize > 1 );
-diff -uprN old/modules/imgproc/src/utils.cpp new/modules/imgproc/src/utils.cpp
---- old/modules/imgproc/src/utils.cpp	2019-04-08 02:09:10.000000000 +0900
-+++ new/modules/imgproc/src/utils.cpp	2023-11-07 14:01:15.000000000 +0900
+diff --git a/modules/imgproc/src/utils.cpp b/modules/imgproc/src/utils.cpp
+index 4f45cde..b27990c 100644
+--- a/modules/imgproc/src/utils.cpp
++++ b/modules/imgproc/src/utils.cpp
 @@ -40,6 +40,7 @@
  //M*/
  
@@ -6740,7 +7014,7 @@ diff -uprN old/modules/imgproc/src/utils.cpp new/modules/imgproc/src/utils.cpp
  
  CV_IMPL CvSeq* cvPointSeqFromMat( int seq_kind, const CvArr* arr,
                                    CvContour* contour_header, CvSeqBlock* block )
-@@ -87,4 +88,61 @@ cvCopyMakeBorder( const CvArr* srcarr, C
+@@ -87,4 +88,61 @@ cvCopyMakeBorder( const CvArr* srcarr, CvArr* dstarr, CvPoint offset,
      cv::copyMakeBorder( src, dst, top, bottom, left, right, borderType, value );
  }
  
@@ -6802,4 +7076,3 @@ diff -uprN old/modules/imgproc/src/utils.cpp new/modules/imgproc/src/utils.cpp
 +}
 +
  /* End of file. */
-バイナリーファイル old/modules/python/src2/__pycache__/hdr_parser.cpython-38.pyc とnew/modules/python/src2/__pycache__/hdr_parser.cpython-38.pyc は異なります

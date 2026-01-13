@@ -1,5 +1,5 @@
 # extend packages
-IMAGE_INSTALL_append = " \
+IMAGE_INSTALL:append = " \
     opencv \
     oca \
 "

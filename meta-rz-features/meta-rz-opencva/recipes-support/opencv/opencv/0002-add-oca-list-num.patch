@@ -1,0 +1,28 @@
+diff --git a/modules/imgproc/include/opencv2/imgproc.hpp b/modules/imgproc/include/opencv2/imgproc.hpp
+index 1991699..f7f6702 100644
+--- a/modules/imgproc/include/opencv2/imgproc.hpp
++++ b/modules/imgproc/include/opencv2/imgproc.hpp
+@@ -5116,6 +5116,23 @@ Point LineIterator::pos() const
+ 
+ } // cv
+ 
++#define OCA_FUNC_RESIZE         (0)
++#define OCA_FUNC_CVT_COLOR      (2)
++#define OCA_FUNC_GAUSSIAN       (4)
++#define OCA_FUNC_DILATE         (5)
++#define OCA_FUNC_ERODE          (6)
++#define OCA_FUNC_FILTER2D       (7)
++#define OCA_FUNC_SOBEL          (8)
++#define OCA_FUNC_ADAPTIVE_TH    (9)
++#define OCA_FUNC_MATCH_TEMPLATE (10)
++#define OCA_FUNC_AFFINE         (11)
++#define OCA_FUNC_PYR_DOWN       (12)
++#define OCA_FUNC_PYR_UP         (13)
++#define OCA_FUNC_PERSPECTIVE    (14)
++#define OCA_FUNC_FAST           (15)
++#define OCA_FUNC_REMAP          (16)
++#define OCA_LIST_NUM            (17)
++
+ /* opencva activate api */
+ CV_EXPORTS_W int OCA_Activate(unsigned long* OCA_list);
+ 

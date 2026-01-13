@@ -1,5 +1,5 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += " \
-	file://0001_Add_OpenCVA_and_Codec.patch \
+SRC_URI:append = " \
+	file://0001-Add-OpenCVA-and-Codec.patch \
 "
