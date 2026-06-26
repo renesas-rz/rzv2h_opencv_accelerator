@@ -1,0 +1,344 @@
+diff --git old/modules/imgproc/src/color_yuv.dispatch.cpp new/modules/imgproc/src/color_yuv.dispatch.cpp
+index ac6c6e1..ffb2c4a 100644
+--- old/modules/imgproc/src/color_yuv.dispatch.cpp
++++ new/modules/imgproc/src/color_yuv.dispatch.cpp
+@@ -49,7 +49,7 @@ int cvtYUVtoNV_drp(Mat src_mat, Mat dst_mat, int input_yuv, int output_nv)
+     /* dst image area */
+     uint8_t *out_image_buffer;
+ 
+-    out_image_buffer = new uint8_t[dst_width * dst_height * 3 / 2];
++
+ 
+     int result = DRP_NORMAL_END;
+ 
+@@ -139,6 +139,7 @@ int cvtYUVtoNV_drp(Mat src_mat, Mat dst_mat, int input_yuv, int output_nv)
+     result = drp->readDstImage(out_image_buffer);
+     if(DRP_NORMAL_END != result)
+     {
++	delete[] out_image_buffer; 
+         drp->set_drp_end();
+         return DRP_NOT_EXECUTE;
+     }
+@@ -146,6 +147,8 @@ int cvtYUVtoNV_drp(Mat src_mat, Mat dst_mat, int input_yuv, int output_nv)
+     Mat dst_mat_out =  Mat(dst_height * 3 / 2, dst_width, CV_8UC1, out_image_buffer);    
+     dst_mat_out.copyTo(dst_mat);
+ 
++    delete[] out_image_buffer; 
++
+     drp->set_drp_end();
+ 
+     CV_LOG_INFO(nullptr, "cvtYUVtoNV_drp method end.");
+@@ -364,6 +367,7 @@ int cvtYUVtoBGR_drp(Mat src_mat, Mat dst_mat, int width, int height, int color_c
+     result = drp->readDstImage(out_image_buffer);
+     if(DRP_NORMAL_END != result)
+     {
++	delete[] out_image_buffer; 
+         drp->set_drp_end();
+         return DRP_NOT_EXECUTE;
+     }
+@@ -373,6 +377,8 @@ int cvtYUVtoBGR_drp(Mat src_mat, Mat dst_mat, int width, int height, int color_c
+ 
+     CV_LOG_INFO(nullptr, "cvtYUVtoBGR_drp method end.");
+ 
++    delete[] out_image_buffer; 
++
+     drp->set_drp_end();
+ 
+     return DRP_NORMAL_END;
+@@ -433,8 +439,6 @@ int cvtColorTwoPlane_drp(InputArray _ysrc, InputArray _uvsrc, OutputArray _dst,
+     input_size = src1_width * src1_height;
+     input_size += src1_width * src1_height / 2;
+     
+-    input_image_buffer = new uint8_t[input_size];
+-
+     /* checking input length */
+     if(4 > src1_width)
+     {
+@@ -512,19 +516,23 @@ int cvtColorTwoPlane_drp(InputArray _ysrc, InputArray _uvsrc, OutputArray _dst,
+     {
+         uvsrc = uvsrc.clone();
+     }
+-    
++
++    input_image_buffer = new uint8_t[input_size]; 
++
+     memcpy(input_image_buffer, ysrc.data, src1_width * src1_height);    
+     memcpy(input_image_buffer + (src1_width * src1_height), uvsrc.data, src1_width * src1_height / 2);
+ 
+     /* set in process to driver */
+     if(drp->set_drp_start() == DRP_CONFLICT_ERROR)
+     {
++	delete[] input_image_buffer; 
+         return DRP_NOT_EXECUTE;
+     }
+ 
+     result = drp->readBinaryHeader();
+     if(DRP_NORMAL_END != result)
+     {
++	delete[] input_image_buffer; 
+         drp->set_drp_end();
+         return DRP_NOT_EXECUTE;
+     }
+@@ -561,6 +569,7 @@ int cvtColorTwoPlane_drp(InputArray _ysrc, InputArray _uvsrc, OutputArray _dst,
+     result = drp->setYUV2RGBParameter(src1_width, src1_height, input_size, input_format, dst_width, dst_height, output_format_rgb);
+     if(DRP_NORMAL_END != result)
+     {
++	delete[] input_image_buffer; 
+         drp->set_drp_end();
+         return DRP_NOT_EXECUTE;
+     }
+@@ -568,6 +577,7 @@ int cvtColorTwoPlane_drp(InputArray _ysrc, InputArray _uvsrc, OutputArray _dst,
+     result = drp->setSrcImage(input_image_buffer);
+     if(DRP_NORMAL_END != result)
+     {
++	delete[] input_image_buffer; 
+         drp->set_drp_end();
+         return DRP_NOT_EXECUTE;
+     }
+@@ -575,6 +585,7 @@ int cvtColorTwoPlane_drp(InputArray _ysrc, InputArray _uvsrc, OutputArray _dst,
+     result = drp->execDRP();
+     if(DRP_NORMAL_END != result)
+     {
++	delete[] input_image_buffer; 
+         drp->set_drp_end();
+         return DRP_NOT_EXECUTE;
+     }
+@@ -584,6 +595,8 @@ int cvtColorTwoPlane_drp(InputArray _ysrc, InputArray _uvsrc, OutputArray _dst,
+     result = drp->readDstImage(out_image_buffer);
+     if(DRP_NORMAL_END != result)
+     {
++	delete[] input_image_buffer; 
++	delete[] out_image_buffer;   
+         drp->set_drp_end();
+         return DRP_NOT_EXECUTE;
+     }
+@@ -592,6 +605,7 @@ int cvtColorTwoPlane_drp(InputArray _ysrc, InputArray _uvsrc, OutputArray _dst,
+     dst_mat_out.copyTo(dst_mat);
+ 
+     delete[] input_image_buffer;
++    delete[] out_image_buffer; 
+ 
+     drp->set_drp_end();
+ 
+diff --git old/modules/imgproc/src/deriv.cpp new/modules/imgproc/src/deriv.cpp
+index 4d3a3b9..b770dbf 100644
+--- old/modules/imgproc/src/deriv.cpp
++++ new/modules/imgproc/src/deriv.cpp
+@@ -579,6 +579,7 @@ int cv::Sobel_drp(InputArray _src, OutputArray _dst, int ddepth, int dx, int dy,
+     result = drp->readDstImage(out_image_buffer);
+     if (DRP_NORMAL_END != result)
+     {
++	delete[] out_image_buffer; 
+         drp->set_drp_end();
+         return DRP_NOT_EXECUTE;       
+     }
+diff --git old/modules/imgproc/src/filter.dispatch.cpp new/modules/imgproc/src/filter.dispatch.cpp
+index 500a14a..8a7c5fc 100644
+--- old/modules/imgproc/src/filter.dispatch.cpp
++++ new/modules/imgproc/src/filter.dispatch.cpp
+@@ -1711,6 +1711,7 @@ int filter2D_drp(InputArray _src, OutputArray _dst, int ddepth,
+     result = drp->readDstImage(out_image_buffer);
+     if (DRP_NORMAL_END != result)
+     {
++	delete[] out_image_buffer; 
+         drp->set_drp_end();
+         return DRP_NOT_EXECUTE;       
+     }
+diff --git old/modules/imgproc/src/imgwarp.cpp new/modules/imgproc/src/imgwarp.cpp
+index 9b109e7..0640b3e 100644
+--- old/modules/imgproc/src/imgwarp.cpp
++++ new/modules/imgproc/src/imgwarp.cpp
+@@ -1801,8 +1801,6 @@ int cv::remap_drp(InputArray _src, OutputArray _dst,
+ 
+     memcpy(&border_value_32t, bgra_8t, 4);
+ 
+-    out_image_buffer = new uint8_t[dst_width*dst_height*dst_ch];
+-
+     /* check continuous src */
+     if(!src_mat.isContinuous())
+     {
+@@ -1862,10 +1860,13 @@ int cv::remap_drp(InputArray _src, OutputArray _dst,
+         return DRP_NOT_EXECUTE;
+     }
+ 
++    out_image_buffer = new uint8_t[dst_width*dst_height*dst_ch]; 
++
+     /* to read warpPerspective dst image from drp output area */
+     result = drp->readDstImage(out_image_buffer);
+     if(DRP_NORMAL_END != result)
+     {
++	delete[] out_image_buffer; 
+         drp->set_drp_end();
+         return DRP_NOT_EXECUTE;
+     }
+@@ -3065,8 +3066,6 @@ int cv::warpAffine_drp(InputArray _src, OutputArray _dst,
+     {
+         src_mat = src_mat.clone();
+     }
+-    
+-    out_image_buffer = new uint8_t[dst_width*dst_height*dst_ch];
+ 
+     /* set in process to driver */
+     if(drp->set_drp_start() == DRP_CONFLICT_ERROR)
+@@ -3107,10 +3106,13 @@ int cv::warpAffine_drp(InputArray _src, OutputArray _dst,
+         return DRP_NOT_EXECUTE;
+     }
+ 
++    out_image_buffer = new uint8_t[dst_width*dst_height*dst_ch]; 
++
+     /* to read warpAffine dst image from drp output area */
+     result = drp->readDstImage(out_image_buffer);
+     if(DRP_NORMAL_END != result)
+     {
++	delete[] out_image_buffer; 
+         drp->set_drp_end();
+         return DRP_NOT_EXECUTE;
+     }
+@@ -3840,8 +3842,6 @@ int cv::warpPerspective_drp( InputArray _src, OutputArray _dst, InputArray _M0,
+         src_mat = src_mat.clone();
+     }
+ 
+-    out_image_buffer = new uint8_t[dst_width*dst_height*dst_ch];
+-
+     /* set in process to driver */
+     if(drp->set_drp_start() == DRP_CONFLICT_ERROR)
+     {
+@@ -3881,10 +3881,13 @@ int cv::warpPerspective_drp( InputArray _src, OutputArray _dst, InputArray _M0,
+         return DRP_NOT_EXECUTE;
+     }
+ 
++    out_image_buffer = new uint8_t[dst_width*dst_height*dst_ch]; 
++
+     /* to read warpPerspective dst image from drp output area */
+     result = drp->readDstImage(out_image_buffer);
+     if(DRP_NORMAL_END != result)
+     {
++	delete[] out_image_buffer; 
+         drp->set_drp_end();
+         return DRP_NOT_EXECUTE;
+     }
+diff --git old/modules/imgproc/src/morph.dispatch.cpp new/modules/imgproc/src/morph.dispatch.cpp
+index 6c03ae2..878d4ed 100644
+--- old/modules/imgproc/src/morph.dispatch.cpp
++++ new/modules/imgproc/src/morph.dispatch.cpp
+@@ -1195,6 +1195,7 @@ static int morphOp_drp(int op, InputArray _src, OutputArray _dst,
+     result = drp->readDstImage(out_image_buffer);
+     if (DRP_NORMAL_END != result)
+     {
++	delete[] out_image_buffer; 
+         drp->set_drp_end();
+         return DRP_NOT_EXECUTE;
+     }
+diff --git old/modules/imgproc/src/pyramids.cpp new/modules/imgproc/src/pyramids.cpp
+index f68a79c..8311ab9 100644
+--- old/modules/imgproc/src/pyramids.cpp
++++ new/modules/imgproc/src/pyramids.cpp
+@@ -1509,8 +1509,6 @@ int cv::pyrDown_drp(InputArray _src, OutputArray _dst, const Size& _dsz, int bor
+         src_mat = src_mat.clone();
+     }
+ 
+-    out_image_buffer = new uint8_t[dst_width*dst_height*dst_ch];
+-
+     /* set in process to driver */
+     if(drp->set_drp_start() == DRP_CONFLICT_ERROR)
+     {
+@@ -1550,10 +1548,13 @@ int cv::pyrDown_drp(InputArray _src, OutputArray _dst, const Size& _dsz, int bor
+         return DRP_NOT_EXECUTE;
+     }
+ 
++    out_image_buffer = new uint8_t[dst_width*dst_height*dst_ch]; 
++
+     /* to read pryDown dst image from drp output area */
+     result = drp->readDstImage(out_image_buffer);
+     if(DRP_NORMAL_END != result)
+     {
++	delete[] out_image_buffer; 
+         drp->set_drp_end();
+         return DRP_NOT_EXECUTE;
+     }
+@@ -1781,8 +1782,6 @@ int cv::pyrUp_drp(InputArray _src, OutputArray _dst, const Size& _dsz, int borde
+         src_mat = src_mat.clone();
+     }
+ 
+-    out_image_buffer = new uint8_t[dst_width*dst_height*dst_ch];
+-
+     /* set in process to driver */
+     if(drp->set_drp_start() == DRP_CONFLICT_ERROR)
+     {
+@@ -1822,10 +1821,13 @@ int cv::pyrUp_drp(InputArray _src, OutputArray _dst, const Size& _dsz, int borde
+         return DRP_NOT_EXECUTE;
+     }
+ 
++    out_image_buffer = new uint8_t[dst_width*dst_height*dst_ch]; 
++
+     /* to read pyrUp dst image from drp output area */
+     result = drp->readDstImage(out_image_buffer);
+     if(DRP_NORMAL_END != result)
+     {
++	delete[] out_image_buffer; 
+         drp->set_drp_end();
+         return DRP_NOT_EXECUTE;
+     }
+diff --git old/modules/imgproc/src/resize.cpp new/modules/imgproc/src/resize.cpp
+index ef7c0c0..e5fe2df 100644
+--- old/modules/imgproc/src/resize.cpp
++++ new/modules/imgproc/src/resize.cpp
+@@ -4261,8 +4261,6 @@ int resize_drp(InputArray _src, OutputArray _dst, Size dsize, double inv_scale_x
+         return DRP_NOT_EXECUTE;
+     }
+ 
+-    out_image_buffer = new uint8_t[dst_width*dst_height*dst_ch];
+-
+     /* check continuous */
+     if(!src_mat.isContinuous())
+     {
+@@ -4308,10 +4306,13 @@ int resize_drp(InputArray _src, OutputArray _dst, Size dsize, double inv_scale_x
+         return DRP_NOT_EXECUTE;
+     }
+ 
++    out_image_buffer = new uint8_t[dst_width*dst_height*dst_ch]; 
++
+     /* to read resize dst image from drp output area */
+     result = drp->readDstImage(out_image_buffer);
+     if(DRP_NORMAL_END != result)
+     {
++	delete[] out_image_buffer; 
+         drp->set_drp_end();
+         return DRP_NOT_EXECUTE;
+     }
+diff --git old/modules/imgproc/src/smooth.dispatch.cpp new/modules/imgproc/src/smooth.dispatch.cpp
+index 397acdf..4f1547e 100644
+--- old/modules/imgproc/src/smooth.dispatch.cpp
++++ new/modules/imgproc/src/smooth.dispatch.cpp
+@@ -856,6 +856,7 @@ int GaussianBlur_drp(Mat src_mat, Mat dst_mat, Size ksize, double sigma1, double
+     result = drp->readDstImage(out_image_buffer);
+     if(DRP_NORMAL_END != result)
+     {
++	delete[] out_image_buffer; 
+         drp->set_drp_end();
+         return DRP_NOT_EXECUTE;
+     }
+diff --git old/modules/imgproc/src/templmatch.cpp new/modules/imgproc/src/templmatch.cpp
+index 248489b..f38248d 100644
+--- old/modules/imgproc/src/templmatch.cpp
++++ new/modules/imgproc/src/templmatch.cpp
+@@ -1312,6 +1312,7 @@ int cv::matchTemplate_drp(InputArray _img, InputArray _templ, OutputArray _resul
+     result = drp->readTemplateMatchResult(out_image_buffer);
+     if (DRP_NORMAL_END != result)
+     {
++	delete[] out_image_buffer; 
+         drp->set_drp_end();
+         return DRP_NOT_EXECUTE;
+     }
+diff --git old/modules/imgproc/src/thresh.cpp new/modules/imgproc/src/thresh.cpp
+index 16b8aec..bc24947 100644
+--- old/modules/imgproc/src/thresh.cpp
++++ new/modules/imgproc/src/thresh.cpp
+@@ -1819,6 +1819,7 @@ int cv::adaptiveThreshold_drp( InputArray _src, OutputArray _dst, double max_val
+     result = drp->readDstImage(out_image_buffer);
+     if (DRP_NORMAL_END != result)
+     {
++	delete[] out_image_buffer; 
+         drp->set_drp_end();
+         return DRP_NOT_EXECUTE;
+     }
