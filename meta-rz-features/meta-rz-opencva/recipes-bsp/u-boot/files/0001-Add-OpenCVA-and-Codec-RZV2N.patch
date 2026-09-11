@@ -1,0 +1,38 @@
+diff --git a/include/configs/rzv2n-dev.h b/include/configs/rzv2n-dev.h
+index eb0fc8a..74720f7 100644
+--- a/include/configs/rzv2n-dev.h
++++ b/include/configs/rzv2n-dev.h
+@@ -61,8 +61,12 @@
+ 	"prodsdbootargs=setenv bootargs rw rootwait earlycon root=/dev/mmcblk2p2 \0" \
+ 	"prodemmcbootargs=setenv bootargs rw rootwait earlycon root=/dev/mmcblk0p2 \0" \
+ 	"bootimage=booti 0x48080000 - 0x48000000 \0" \
+-	"emmcload=ext4load mmc 0:2 0x48080000 boot/Image;ext4load mmc 0:2 0x48000000 boot/r9a09g056n44-dev.dtb;run prodemmcbootargs \0" \
+-	"sd2load=ext4load mmc 1:2 0x48080000 boot/Image;ext4load mmc 1:2 0x48000000 boot/r9a09g056n44-dev.dtb;run prodsdbootargs \0" \
++	"ocaaddr=0xA8000000 \0"     \
++	"ocabin=OpenCV_Bin.bin \0"  \
++	"codaddr=0xAFD00000 \0"     \
++	"codbin=Codec_Bin.bin \0"   \
++	"emmcload=ext4load mmc 0:2 ${ocaaddr} boot/${ocabin}; ext4load mmc 0:2 ${codaddr} boot/${codbin};ext4load mmc 0:2 0x48080000 boot/Image;ext4load mmc 0:2 0x48000000 boot/r9a09g056n44-dev.dtb;run prodemmcbootargs \0" \
++	"sd2load=ext4load mmc 1:2 ${ocaaddr} boot/${ocabin}; ext4load mmc 1:2 ${codaddr} boot/${codbin};ext4load mmc 1:2 0x48080000 boot/Image;ext4load mmc 1:2 0x48000000 boot/r9a09g056n44-dev.dtb;run prodsdbootargs \0" \
+ 	"bootcmd_check=if mmc dev 1; then run sd2load; else run emmcload; fi \0"
+ 
+ #define CONFIG_BOOTCOMMAND	"env default -a;run bootcmd_check;run bootimage"
+diff --git a/include/configs/rzv2n-evk.h b/include/configs/rzv2n-evk.h
+index 34c8c0d..65bbfc3 100644
+--- a/include/configs/rzv2n-evk.h
++++ b/include/configs/rzv2n-evk.h
+@@ -54,8 +54,12 @@
+ 	"prodsdbootargs=setenv bootargs rw rootwait earlycon root=/dev/mmcblk1p2 \0" \
+ 	"prodemmcbootargs=setenv bootargs rw rootwait earlycon root=/dev/mmcblk0p2 \0" \
+ 	"bootimage=booti 0x48080000 - 0x48000000 \0" \
+-	"emmcload=ext4load mmc 0:2 0x48080000 boot/Image;ext4load mmc 0:2 0x48000000 boot/r9a09g056n48-rzv2n-evk.dtb;run prodemmcbootargs \0" \
+-	"sd1load=ext4load mmc 1:2 0x48080000 boot/Image;ext4load mmc 1:2 0x48000000 boot/r9a09g056n48-rzv2n-evk.dtb;run prodsdbootargs \0" \
++	"ocaaddr=0xA8000000 \0"     \
++	"ocabin=OpenCV_Bin.bin \0"  \
++	"codaddr=0xAFD00000 \0"     \
++	"codbin=Codec_Bin.bin \0"   \
++	"emmcload=ext4load mmc 0:2 ${ocaaddr} boot/${ocabin}; ext4load mmc 0:2 ${codaddr} boot/${codbin};ext4load mmc 0:2 0x48080000 boot/Image;ext4load mmc 0:2 0x48000000 boot/r9a09g056n48-rzv2n-evk.dtb;run prodemmcbootargs \0" \
++	"sd1load=ext4load mmc 1:2 ${ocaaddr} boot/${ocabin}; ext4load mmc 1:2 ${codaddr} boot/${codbin};ext4load mmc 1:2 0x48080000 boot/Image;ext4load mmc 1:2 0x48000000 boot/r9a09g056n48-rzv2n-evk.dtb;run prodsdbootargs \0" \
+ 	"bootcmd_check=if mmc dev 1; then run sd1load; else run emmcload; fi \0"
+ 
+ #define CONFIG_BOOTCOMMAND	"env default -a;run bootcmd_check;run bootimage"

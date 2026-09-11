@@ -7,8 +7,8 @@ RZ/V2H
 ## License
 | Software | License |
 | ------------ | --------- |
-| OpenCV Accelerator | [3-clause BSD](licenses/opencva/LICENSE) |
-| DRP Driver | [GPL-2.0](licenses/drp-driver/LICENSE)  | 
+| OpenCV Accelerator | [Apache License 2.0](licenses/opencva/LICENSE) |
+| DRP Driver | [GPLv2](licenses/drp-driver/LICENSE)  | 
 
 ## List of Abbreviations and Acronyms
 | Abbreviation | Full form |
@@ -17,6 +17,15 @@ RZ/V2H
 | DRP | Dynamically Reconfigurable Processor | 
 | OpenCV | Open-source Computer Vision library |
 | OpenCVA | OpenCV Accelerator |  
+
+## Related Documents
+[Renesas RZ/V AI Web](https://renesas-rz.github.io/rzv_ai_sdk/latest/)  
+[RZ/V2H User's Manual: Hardware (R01UH1072)](https://renesas.com/rzv2h)  
+
+## Installation  
+This version of the OpenCV Accelerator is included in the RZ/V2H AI SDK v8.00.  
+Please refer [https://renesas-rz.github.io/rzv_ai_sdk/8.10/howto_build_aisdk_v2h.html](https://renesas-rz.github.io/rzv_ai_sdk/8.10/howto_build_aisdk_v2h.html) for installation instructions.  
+The OpenCV Accelerator is stored in ${YOCTO_WORK}/meta-rz-features/meta-rz-opencva.
 
 ## Table of Contents
 [1. Overview](#1-overview)  

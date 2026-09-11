@@ -5,12 +5,12 @@
 DESCRIPTION = "Recipe for OpenCVA"
 SECTION = "libs"
 DEPENDS = ""
-LICENSE = "BSD-3-Clause"
-LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
+LICENSE = "Apache-2.0"
+LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
 SRC_URI = " \
-	file://OpenCV_Bin.bin \
-    "
+    file://OpenCV_Bin.bin \
+"
 
 INSTALL_DIRECTORY ?= "/boot"
 

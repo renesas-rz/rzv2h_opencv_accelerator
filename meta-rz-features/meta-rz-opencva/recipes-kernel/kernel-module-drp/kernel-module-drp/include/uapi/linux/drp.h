@@ -43,6 +43,7 @@
 #define DRP_ERRINFO_SUCCESS               (0)
 #define DRP_ERRINFO_DRP_ERR               (-1)
 #define DRP_ERRINFO_RESET                 (-3)
+#define DRP_ERRINFO_SUSPEND               (-4)
 #define DRP_RESERVED_NUM                  (10)
 #define DRP_SEQ_NUM                       (20)
 #define DRP_EXE_DRP_40BIT                 (3)
